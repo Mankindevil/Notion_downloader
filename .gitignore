@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.log
+notion_download/
+notion_download_old/
+.downloaded_hrefs.txt
+debug_source.html
