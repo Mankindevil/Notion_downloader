@@ -464,13 +464,9 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
             return result
         time.sleep(2.5)
 
-        # ── Detect collection-view pages (tag/filter galleries, not art posts) ─
-        # These are Notion database-view pages whose content IS a filtered gallery;
-        # they have no 投稿日 property and no original artwork. Skip them.
         if driver.find_elements(By.CSS_SELECTOR, ".notion-collection_view_page-block"):
             result["is_collection"] = True
-            log.info("  ⟹ Collection-view page — not an art post, skipping")
-            return result
+            log.debug("  (page contains a collection-view block)")
 
         open_all_toggles(driver)
         slow_scroll(driver)
@@ -1010,7 +1006,7 @@ def get_cards_with_years(driver) -> list:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def scrape_gallery(url: str, out_dir: Path, headless: bool = True, skip_downloaded: bool = False,
-                   bypass_cloudflare: bool = False):
+                   bypass_cloudflare: bool = False, skip_collections: bool = False):
     from selenium.webdriver.common.by import By
 
     driver = make_driver(headless, bypass_cloudflare=bypass_cloudflare)
@@ -1133,9 +1129,9 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True, skip_download
             else:
                 log.warning("  (no href for this card)")
 
-            # ── Skip collection-view pages (tag/filter galleries) ──────────
-            if sub.get("is_collection"):
-                log.info("  → Skipped (not an art post)")
+            # ── Skip collection-view pages if requested ────────────────────
+            if skip_collections and sub.get("is_collection"):
+                log.info("  → Skipped (collection-view page, use --no-skip-collections to include)")
                 continue
 
             # ── Determine date prefix ──────────────────────────────────────
@@ -1308,6 +1304,8 @@ def main():
                     help="Skip entries whose href is already in the download cache")
     ap.add_argument("--bypass-cloudflare", action="store_true",
                     help="Use undetected-chromedriver to bypass Cloudflare bot detection")
+    ap.add_argument("--skip-collections", action="store_true",
+                    help="Skip pages that contain a Notion collection-view block")
     args = ap.parse_args()
 
     setup_logging(args.log)
@@ -1323,7 +1321,8 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     scrape_gallery(args.url, out_dir, headless=not args.no_headless,
                    skip_downloaded=args.skip_downloaded,
-                   bypass_cloudflare=args.bypass_cloudflare)
+                   bypass_cloudflare=args.bypass_cloudflare,
+                   skip_collections=args.skip_collections)
 
 
 if __name__ == "__main__":
