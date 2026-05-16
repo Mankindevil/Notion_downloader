@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"O:\\\\Coding\\\\Claude\"; .venv\\\\Scripts\\\\python.exe _inspect_page.py 2>&1 | Out-String -Stream | ForEach-Object { $_ })",
+      "WebFetch(domain:shop.ape-insight.jp)"
+    ]
+  }
+}

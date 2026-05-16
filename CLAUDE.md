@@ -2,61 +2,69 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Environment
 
-A Selenium-based scraper that downloads Notion gallery pages — extracting metadata, cover images, sub-page content, and generating a static markdown + HTML gallery organized by year.
+Always use `.venv\Scripts\python.exe` (never system `python`) — a `.venv` is present in the repo root.
 
-## Running the Scraper
-
-```bash
-# Install the only external dependency
-pip install selenium
-
-# Run with defaults (targets hightway420.notion.site)
-python notion_downloader.py
-
-# Common flags
-python notion_downloader.py --url "https://your.notion.site/..." --out my_gallery
-python notion_downloader.py --no-headless   # show Chrome window for debugging
-python notion_downloader.py --log custom.log
+```powershell
+.\.venv\Scripts\python.exe script.py --flags
+.\.venv\Scripts\pip.exe install package
 ```
 
-Requires Chrome/Chromium installed on the system. No test suite exists; testing is done manually by running against a live Notion URL.
+No test suite exists. Testing is done by running the scripts against live URLs and checking output.
 
-## Architecture
+## Scrapers
 
-Everything lives in `notion_downloader.py` (1,191 lines). The main execution path:
+### notion_downloader.py
 
-1. `main()` → `scrape_gallery()` — loads the Notion page, clicks the "中文畫廊" tab, scrolls and triggers all "Load More" buttons, then collects all gallery cards
-2. For each card, `scrape_subpage()` extracts title, date, properties, text blocks, and images
-3. `write_entry_readme()` generates per-entry `README.md` with metadata table + image gallery
-4. `main()` then writes a global `notion_download/README.md` index and `index.html` gallery
+Selenium-based scraper for a Notion gallery page. Single-file, 1,191 lines.
 
-### Key functions
+```powershell
+# dependency
+.\.venv\Scripts\pip.exe install selenium   # also requires Chrome/Chromium
 
-| Function | Purpose |
+.\.venv\Scripts\python.exe notion_downloader.py
+.\.venv\Scripts\python.exe notion_downloader.py --url "https://your.notion.site/…" --out my_gallery
+.\.venv\Scripts\python.exe notion_downloader.py --no-headless   # show browser for debugging
+```
+
+**Execution path:** `main()` → `scrape_gallery()` scrolls the page and collects all gallery cards → per-card `scrape_subpage()` extracts title/date/images → `write_entry_readme()` → global `README.md` + `index.html`.
+
+**Key functions**
+
+| Function | Notes |
 |---|---|
-| `scrape_gallery()` | JS-based card extraction with year-group detection from visual Y-position |
-| `scrape_subpage()` | Five-strategy fallback chain for date extraction (time elements → CSS rows → XPath → JS DOM → raw page source) |
-| `parse_notion_date()` | Parses 20+ date format variations (ISO, English, Chinese, Japanese, Korean, relative) |
-| `download()` | HTTP downloader with 3-attempt retry + exponential backoff |
-| `slugify()` | Sanitizes strings into safe filesystem names |
+| `scrape_gallery()` | Year-group detection by comparing card Y-positions to header Y-positions in DOM |
+| `scrape_subpage()` | Five-strategy fallback chain for date: time elements → CSS rows → XPath → JS DOM → raw source |
+| `parse_notion_date()` | 20+ format variations: ISO, English, Chinese, Japanese, Korean, relative ("3天前") |
+| `download()` | `urllib` with 3-retry exponential backoff; reuse this pattern in new scripts |
+| `slugify()` | Strips `\/*?:"<>|`, collapses whitespace, caps at 60 chars — safe on Windows |
 
-### Output structure
+Output: `notion_download/{year}/{date}_{slug}/README.md` + `covers/` + `index.html`.
 
+---
+
+### ape_insight_downloader.py
+
+HTTP scraper (no browser) for a Shop-Pro e-commerce site. Single-file.
+
+```powershell
+# dependency
+.\.venv\Scripts\pip.exe install requests
+
+.\.venv\Scripts\python.exe ape_insight_downloader.py              # all 86 pages
+.\.venv\Scripts\python.exe ape_insight_downloader.py --pages 1    # smoke test
+.\.venv\Scripts\python.exe ape_insight_downloader.py --no-translate
 ```
-notion_download/
-├── 2026/entry-slug/README.md    # per-entry metadata + images
-├── 2025/...
-├── covers/                      # card cover images
-├── README.md                    # auto-generated global index by year
-└── index.html                   # dark-themed HTML gallery grid
-```
 
-### Notion-specific details
+**Execution path:** Phase 1 — iterate listing pages 1–86 collecting `{pid, name, thumb_url}` dicts → Phase 2 — for each product POST to bypass age gate, extract image URLs, translate name, download images, append pid to `.downloaded_pids.txt` (resume support).
 
-- Gallery year groups are detected by comparing card Y-positions to year-header Y-positions in the DOM
-- Cover images are extracted from both `<img>` tags and CSS `background-image` properties
-- Property names are matched against a hardcoded list in English, Chinese, and Japanese
-- "Load More" button text is matched in 5 languages
-- Anti-detection Chrome options are applied to avoid bot blocking
+**Key design decisions**
+
+- **Age gate bypass**: product pages return a 7 KB gate page on GET; must POST `restricted_age_agree=1` to get the full 69 KB product page. Implemented in `fetch_product_html()`.
+- **Encoding**: site is EUC-JP. `_decode_response()` detects charset from the `Content-Type` header and `<meta charset>` tag before falling back to chardet.
+- **Image filter**: CDN URLs containing `/product/` and no `_th.` suffix are full-size product images. Logo/CSS/favicon URLs lack `/product/` and are excluded in `extract_cdn_images()`.
+- **Translation**: Google Translate unofficial JSON endpoint (`translate.googleapis.com/translate_a/single?client=gtx`), result cached in `_translation_cache` dict, 0.5 s delay per call.
+- **stdout on Windows**: stream log handler opened with `encoding="utf-8"` explicitly to avoid GBK encoding errors on CJK output.
+
+Output: `ape_insight/{zh_name}_{pid}/001.jpg …` + `index.md`.

@@ -7,3 +7,8 @@ notion_download/
 notion_download_old/
 .downloaded_hrefs.txt
 debug_source.html
+ape_insight/
+*.xls
+*.xlsx
+*.csv
+收集截图/
