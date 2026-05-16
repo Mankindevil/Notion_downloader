@@ -1,0 +1,26 @@
+﻿`_record_id` is metadata for record operations, not a table field.
+
+| _record_id | 手办名称 | 状态 | 定金 | 补款 | 补款日期 | 备注 | 重点 | 店铺 | 父记录 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| recvjG8BI6lKvL | 神官希卜娜 | ["待付款"] | 940 |  | 26年5月13日 |  | false | ["闲鱼"] |  |
+| recvjG8BI6PBkP | Meat 剑之圣女 | ["待付款"] | 500 | 599 |  |  | false | ["小宝"] |  |
+| recvjG8BI6PYBz | HOTVENUS 黑兽系列 拉德米拉 | ["待付款"] | 10 |  | 暂无日期 | 先行预定 | false | ["橘子屋"] |  |
+| recvjG8BI6qZfD | 泳装圣亚 | ["待付款"] | 500 | 1020 | 26年4月30日 |  | false | ["群友"] |  |
+| recvjG8BI6QOT1 | 老男人 | ["待付款"] | 480 | 900 | 26年3月 |  | false | ["daze"] |  |
+| recvjG8BI61cOA | 萝莉神 | ["待付款"] | 540 | 1500 | 26年3月 |  | false | ["daze"] |  |
+| recvjG8BI6fkoN | 战法萝莉 | ["待付款"] | 200 | 1300 | 26年5月 | +500 配件包 | true | ["ztr"] |  |
+| recvjG8BI6HjEY | 朝比濑 | ["待付款"] | 300 | 850 | 26年3月 |  | false | ["橘子屋"] |  |
+| recvjG8BI6PAzR | 莱拉 | ["待付款"] | 300 | 650 | 26年3月 |  | false | ["橘子屋"] |  |
+| recvjG8BI6wOxV | 躺着的小黑 | ["待付款"] | 100 | 980 | 暂无日期 |  | true | ["ztr"] |  |
+| recvjG8BI6UOoo | 白兔 | ["待付款"] | 200 | 1300 | 暂无日期 |  | true | ["ztr"] |  |
+| recvjG8BI6pXzI | 自拍圣亚 | ["待付款"] | 100 | 1000 | 26年9月 |  | true | ["ztr"] |  |
+| recvjG8BI65Fo9 | 旗袍星野 | ["待付款"] | 200 | 1100 | 暂无日期 |  | false | ["ztr"] |  |
+| recvjG8BI6H7NE | 奶龙 | ["待付款"] | 200 |  | 暂无日期 |  | true | ["ztr"] |  |
+| recvjG8BI6dn4p | 笑面教授 | ["待付款"] | 200 |  | 暂无日期 |  | true | ["ztr"] |  |
+| recvjG8BI6tLPU | llk | ["待付款"] | 300 | 1950 | 暂无日期 |  | true | ["蜜梨"] |  |
+| recvjG8BI69PzL | 甘雨后庭 | ["待付款"] | 380 | 800 | 26年 |  | false | ["鱼头"] |  |
+| recvjG8BI6ipop | 酒吞 | ["待付款"] | 300 | 680 | 26年 |  | false | ["鱼头"] |  |
+| recvjG8BI67YRa | 双剑 | ["待付款"] | 680 | 1700 | 26年 |  | false | ["鱼头"] |  |
+| recvjG8BI6gJbZ | 哥布林战车 | ["待付款"] | 580 | 1200 | 26年中 |  | false | ["鱼头"] |  |
+
+Meta: count=20; has_more=true; record_scope=all_records; field_scope=all_fields

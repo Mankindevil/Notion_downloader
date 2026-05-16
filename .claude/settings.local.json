@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "PowerShell(cd \"O:\\\\Coding\\\\Claude\"; .venv\\\\Scripts\\\\python.exe _inspect_page.py 2>&1 | Out-String -Stream | ForEach-Object { $_ })",
-      "WebFetch(domain:shop.ape-insight.jp)"
+      "WebFetch(domain:shop.ape-insight.jp)",
+      "Bash(lark-cli *)",
+      "WebFetch(domain:open.larkoffice.com)",
+      "WebFetch(domain:open.larksuite.com)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe show_dates.py 2>&1)",
+      "PowerShell(lark-cli *)",
+      "WebFetch(domain:ranagu.com)",
+      "Bash(Get-ChildItem *)"
     ]
   }
 }
