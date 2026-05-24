@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-Notion Gallery Downloader
+Notion Gallery Downloader (CloakBrowser / Playwright edition)
 - Clicks 中文畫廊 tab
 - Detects year groups (2026 / 2025 / ...) and mirrors that structure
 - Uses sub-page 投稿日 date as folder/file prefix (e.g. 2026-02-28_理解・美/)
 - Saves README.md per entry (not JSON)
 - Downloads cover thumbnails + all sub-page images
+- Uses CloakBrowser for source-level stealth (defeats Cloudflare / FingerprintJS)
 
 Usage:
-    pip install selenium
+    pip install cloakbrowser
     python notion_downloader.py
     python notion_downloader.py --no-headless     # watch the browser
     python notion_downloader.py --url "..." --out my_folder
@@ -122,28 +123,24 @@ def parse_notion_date(raw: str, fallback_year: str = "") -> str:
     log.debug(f"    parse_notion_date({raw!r}, fallback_year={fallback_year!r})")
 
     # ── Absolute formats ─────────────────────────────────────────────────
-    # ISO / datetime attr: 2026-02-28 or 2026-02-28T...
     m = re.match(r'^(\d{4}-\d{2}-\d{2})', raw)
     if m:
         result = m.group(1)
         log.debug(f"    → ISO match: {result}")
         return result
 
-    # Slash: 2026/02/28
     m = re.match(r'^(\d{4})/(\d{1,2})/(\d{1,2})', raw)
     if m:
         result = f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
         log.debug(f"    → slash match: {result}")
         return result
 
-    # Chinese/Japanese full: 2026年2月28日
     m = re.search(r'(\d{4})[年/](\d{1,2})[月/](\d{1,2})日?', raw)
     if m:
         result = f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
         log.debug(f"    → Chinese/JP full match: {result}")
         return result
 
-    # English full: "February 28, 2026" or "Feb 28, 2026" or "28 February 2026"
     months = {
         'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
         'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12,
@@ -161,7 +158,6 @@ def parse_notion_date(raw: str, fallback_year: str = "") -> str:
         log.debug(f"    → English DMY match: {result}")
         return result
 
-    # Month+day only: "2月28日" — use fallback_year or current year
     m = re.search(r'(\d{1,2})月(\d{1,2})日', raw)
     if m:
         yr = int(fallback_year) if fallback_year and fallback_year.isdigit() else today.year
@@ -183,7 +179,6 @@ def parse_notion_date(raw: str, fallback_year: str = "") -> str:
         log.debug(f"    → relative '2 days ago': {result}")
         return result
 
-    # Chinese/Traditional relative weekday: 上星期X / 上週X / 先週X (last week's X-day)
     _wd_map = {'一': 0, '二': 1, '三': 2, '四': 3, '五': 4, '六': 5, '日': 6, '天': 6}
     m = re.search(r'(?:上星期|上週|先週)([一二三四五六日天])', raw)
     if m:
@@ -194,14 +189,12 @@ def parse_notion_date(raw: str, fallback_year: str = "") -> str:
         return result
 
     # ── Relative: N units ago ─────────────────────────────────────────────
-    # N days/天/日
     m = re.search(r'(\d+)\s*(?:天前|日前|days?\s*ago)', raw, re.I)
     if m:
         result = (today - timedelta(days=int(m.group(1)))).isoformat()
         log.debug(f"    → relative N days ago: {result}")
         return result
 
-    # N weeks/周/週
     m = re.search(r'(\d+)\s*(?:周前|週前|weeks?\s*ago)', raw, re.I)
     if m:
         result = (today - timedelta(weeks=int(m.group(1)))).isoformat()
@@ -212,7 +205,6 @@ def parse_notion_date(raw: str, fallback_year: str = "") -> str:
         log.debug(f"    → relative 1 week ago: {result}")
         return result
 
-    # N months/个月/個月/ヶ月
     m = re.search(r'(\d+)\s*(?:个月前|個月前|ヶ月前|months?\s*ago)', raw, re.I)
     if m:
         n = int(m.group(1))
@@ -241,11 +233,8 @@ def extract_date_from_page_source(html: str, fallback_year: str = "") -> str:
     Last-resort: scan embedded JSON / meta tags in the raw page source for an ISO date.
     Notion stores block data as JSON in <script> tags; we look for date-property values.
     """
-    # ISO dates near date-field keywords
     patterns = [
-        # Notion date property JSON: "start":"YYYY-MM-DD" (most reliable structure)
         r'"start"\s*:\s*"(20\d\d-\d{2}-\d{2})',
-        # Keyword-anchored with strict post-date keys only (no generic "date" which matches last_edited_time etc.)
         r'(?:投稿日|post_date|created_time)"[^"]{0,60}"(20\d\d-\d{2}-\d{2})',
     ]
     for p in patterns:
@@ -260,99 +249,49 @@ def extract_date_from_page_source(html: str, fallback_year: str = "") -> str:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Selenium helpers
+# CloakBrowser / Playwright helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _chrome_major_version() -> int | None:
-    """Return the installed Chrome major version, or None if undetectable."""
-    import subprocess
-    try:
-        import winreg
-        for hive, path in [
-            (winreg.HKEY_CURRENT_USER,  r"Software\Google\Chrome\BLBeacon"),
-            (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Google\Chrome\BLBeacon"),
-        ]:
-            try:
-                key = winreg.OpenKey(hive, path)
-                ver, _ = winreg.QueryValueEx(key, "version")
-                m = re.match(r"(\d+)", ver)
-                if m:
-                    return int(m.group(1))
-            except OSError:
-                continue
-    except ImportError:
-        pass
-    for exe in ("google-chrome", "google-chrome-stable", "chromium-browser", "chrome"):
-        try:
-            r = subprocess.run([exe, "--version"], capture_output=True, text=True, timeout=5)
-            m = re.search(r"(\d+)\.\d+\.\d+", r.stdout)
-            if m:
-                return int(m.group(1))
-        except Exception:
-            continue
-    return None
+def make_context(headless: bool, profile_dir: Path):
+    """Launch a persistent CloakBrowser context — stealth fingerprints baked into the binary."""
+    from cloakbrowser import launch_persistent_context
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    log.info(f"Launching CloakBrowser (persistent profile: {profile_dir})")
+    return launch_persistent_context(
+        str(profile_dir),
+        headless=headless,
+        args=["--no-sandbox", "--disable-dev-shm-usage", "--lang=zh-TW"],
+        viewport={"width": 1920, "height": 1080},
+        locale="zh-TW",
+        humanize=True,
+    )
 
 
-def make_driver(headless: bool, bypass_cloudflare: bool = False):
-    if bypass_cloudflare:
-        try:
-            import undetected_chromedriver as uc
-            opts = uc.ChromeOptions()
-            opts.add_argument("--no-sandbox")
-            opts.add_argument("--disable-dev-shm-usage")
-            opts.add_argument("--window-size=1920,1080")
-            opts.add_argument("--lang=zh-TW")
-            version = _chrome_major_version()
-            log.info(f"Using undetected-chromedriver (Cloudflare bypass), Chrome major={version}")
-            return uc.Chrome(options=opts, headless=headless, use_subprocess=True,
-                             version_main=version)
-        except ImportError:
-            log.warning("undetected-chromedriver not found — run: pip install undetected-chromedriver")
-            log.warning("Falling back to plain selenium (may be blocked by Cloudflare)")
-
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options
-    opts = Options()
-    if headless:
-        opts.add_argument("--headless=new")
-    opts.add_argument("--no-sandbox")
-    opts.add_argument("--disable-dev-shm-usage")
-    opts.add_argument("--window-size=1920,1080")
-    opts.add_argument("--lang=zh-TW")
-    opts.add_argument("--disable-blink-features=AutomationControlled")
-    opts.add_experimental_option("excludeSwitches", ["enable-automation"])
-    return webdriver.Chrome(options=opts)
-
-
-def wait_for_page(driver, timeout=30):
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
+def wait_for_page(page, timeout=30):
     for sel in ["[data-block-id]", ".notion-page-content", ".notion-scroller", ".notion-collection", "main"]:
         try:
-            WebDriverWait(driver, timeout).until(EC.presence_of_element_located((By.CSS_SELECTOR, sel)))
+            page.wait_for_selector(sel, timeout=timeout * 1000)
             return sel
         except Exception:
             continue
     return None
 
 
-def slow_scroll(driver, step_px=400, delay=0.35):
-    driver.execute_script("window.scrollTo(0,0);")
+def slow_scroll(page, step_px=400, delay=0.35):
+    page.evaluate("window.scrollTo(0,0)")
     time.sleep(0.5)
-    total = driver.execute_script("return document.body.scrollHeight")
+    total = page.evaluate("document.body.scrollHeight")
     pos = 0
     while pos < total:
         pos += step_px
-        driver.execute_script(f"window.scrollTo(0,{pos});")
+        page.evaluate(f"window.scrollTo(0,{pos})")
         time.sleep(delay)
-        total = driver.execute_script("return document.body.scrollHeight")
+        total = page.evaluate("document.body.scrollHeight")
     time.sleep(1)
 
 
-def open_all_toggles(driver):
+def open_all_toggles(page):
     """Click all closed toggle blocks to expose hidden content."""
-    from selenium.webdriver.common.by import By
     toggle_selectors = [
         ".notion-toggle-block [role='button']",
         "[class*='toggle'][aria-expanded='false']",
@@ -361,12 +300,11 @@ def open_all_toggles(driver):
     opened = 0
     for sel in toggle_selectors:
         try:
-            toggles = driver.find_elements(By.CSS_SELECTOR, sel)
-            for t in toggles:
+            for t in page.query_selector_all(sel):
                 try:
                     expanded = t.get_attribute("aria-expanded")
                     if expanded == "false" or expanded is None:
-                        driver.execute_script("arguments[0].click();", t)
+                        t.evaluate("el => el.click()")
                         opened += 1
                         time.sleep(0.15)
                 except Exception:
@@ -378,10 +316,9 @@ def open_all_toggles(driver):
         time.sleep(0.5)
 
 
-def get_bg_image_urls(driver):
-    from selenium.webdriver.common.by import By
+def get_bg_image_urls(page):
     urls = []
-    for el in driver.find_elements(By.CSS_SELECTOR, "[style*='background-image']"):
+    for el in page.query_selector_all("[style*='background-image']"):
         style = el.get_attribute("style") or ""
         for m in re.finditer(r'url\(["\']?(https?://[^"\')\s]+)["\']?\)', style):
             u = m.group(1)
@@ -390,14 +327,13 @@ def get_bg_image_urls(driver):
     return urls
 
 
-def get_all_img_urls(driver):
-    from selenium.webdriver.common.by import By
+def get_all_img_urls(page):
     urls = []
-    for img in driver.find_elements(By.TAG_NAME, "img"):
+    for img in page.query_selector_all("img"):
         src = img.get_attribute("src") or ""
         if src.startswith("http") and ".svg" not in src and not src.startswith("data:"):
             try:
-                w = driver.execute_script("return arguments[0].naturalWidth;", img)
+                w = img.evaluate("el => el.naturalWidth")
                 if w and w < 30:
                     continue
             except Exception:
@@ -422,21 +358,24 @@ def extract_images_from_source(html: str) -> list:
     return result
 
 
-def click_tab(driver, label: str) -> bool:
-    from selenium.webdriver.common.by import By
+def click_tab(page, label: str) -> bool:
     try:
-        els = driver.find_elements(By.XPATH, f"//*[contains(text(), '{label}')]")
+        els = page.query_selector_all(f"xpath=//*[contains(text(), '{label}')]")
         for el in els:
             target = el
             for _ in range(5):
                 try:
-                    driver.execute_script("arguments[0].click();", target)
+                    target.evaluate("el => el.click()")
                     time.sleep(0.3)
                     return True
                 except Exception:
                     pass
                 try:
-                    target = target.find_element(By.XPATH, "..")
+                    handle = target.evaluate_handle("el => el.parentElement")
+                    parent = handle.as_element()
+                    if not parent:
+                        break
+                    target = parent
                 except Exception:
                     break
     except Exception:
@@ -448,29 +387,27 @@ def click_tab(driver, label: str) -> bool:
 # Sub-page scraper
 # ──────────────────────────────────────────────────────────────────────────────
 
-def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
+def scrape_subpage(page, page_url: str, fallback_year: str = "") -> dict:
     """Visit a card sub-page, extract title, properties (incl. date), images, text."""
     result = {"url": page_url, "title": "", "date": "", "properties": {}, "images": [], "text": [],
               "is_collection": False}
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.common.action_chains import ActionChains
 
     try:
         log.info(f"  Loading sub-page: {page_url}")
-        driver.get(page_url)
-        sel = wait_for_page(driver, timeout=30)
+        page.goto(page_url)
+        sel = wait_for_page(page, timeout=30)
         if not sel:
             log.warning(f"  ⚠ Page load timeout: {page_url}")
             return result
         time.sleep(2.5)
 
-        if driver.find_elements(By.CSS_SELECTOR, ".notion-collection_view_page-block"):
+        if page.query_selector(".notion-collection_view_page-block"):
             result["is_collection"] = True
             log.debug("  (page contains a collection-view block)")
 
-        open_all_toggles(driver)
-        slow_scroll(driver)
-        open_all_toggles(driver)  # open any toggles revealed after scroll
+        open_all_toggles(page)
+        slow_scroll(page)
+        open_all_toggles(page)  # open any toggles revealed after scroll
 
         # ── Title ────────────────────────────────────────────────────────────
         title_selectors = [
@@ -482,8 +419,10 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
         ]
         for ts in title_selectors:
             try:
-                el = driver.find_element(By.CSS_SELECTOR, ts)
-                t = el.text.strip()
+                el = page.query_selector(ts)
+                if not el:
+                    continue
+                t = el.inner_text().strip()
                 if t:
                     result["title"] = t
                     log.debug(f"  title found via {ts!r}: {t!r}")
@@ -491,7 +430,7 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
             except Exception:
                 continue
         if not result["title"]:
-            result["title"] = driver.title.replace("| Notion", "").replace("– Notion", "").strip()
+            result["title"] = page.title().replace("| Notion", "").replace("– Notion", "").strip()
             log.debug(f"  title from document.title: {result['title']!r}")
 
         # ── Date/property extraction helper ───────────────────────────────────
@@ -525,11 +464,14 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
 
             # 4. Hover for tooltip
             try:
-                ActionChains(driver).move_to_element(time_el).perform()
+                time_el.hover()
                 time.sleep(0.6)
-                for tip in driver.find_elements(By.CSS_SELECTOR,
+                for tip in page.query_selector_all(
                         "[class*='tooltip'], [role='tooltip'], [data-radix-popper-content-wrapper] *"):
-                    tip_text = tip.text.strip()
+                    try:
+                        tip_text = (tip.inner_text() or "").strip()
+                    except Exception:
+                        continue
                     if tip_text and re.search(r'\d{4}|\d{1,2}[月/]\d{1,2}', tip_text):
                         d = parse_notion_date(tip_text, fallback_year)
                         if d:
@@ -539,7 +481,10 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
                 log.debug(f"    hover failed: {e}")
 
             # 5. Visible text of the element
-            visible_text = (time_el.text or "").strip()
+            try:
+                visible_text = (time_el.inner_text() or "").strip()
+            except Exception:
+                visible_text = ""
             log.debug(f"    <time> visible text: {visible_text!r}")
             if visible_text:
                 d = parse_notion_date(visible_text, fallback_year)
@@ -550,9 +495,8 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
             return ""
 
         # ── Strategy A: scan ALL <time> elements ──────────────────────────────
-        time_els = driver.find_elements(By.TAG_NAME, "time")
+        time_els = page.query_selector_all("time")
         log.debug(f"  Found {len(time_els)} <time> element(s)")
-        # We want 投稿日 specifically; collect all and pick the earliest relevant one
         candidate_dates = []
         for time_el in time_els:
             d = extract_date_from_time_el(time_el)
@@ -570,7 +514,7 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
         # that holds both the key text and the value text (typically ~6–8 levels up).
         if not result["date"]:
             try:
-                js_prop_result = driver.execute_script("""
+                js_prop_result = page.evaluate("""() => {
                     var dateKeys = ['投稿日','Posted','Date','日付','투고일','投稿日付','創建時間','創建日期'];
                     var all = document.querySelectorAll('*');
                     for (var i = 0; i < all.length; i++) {
@@ -593,7 +537,7 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
                         }
                     }
                     return null;
-                """)
+                }""")
                 if js_prop_result:
                     k, v = js_prop_result["key"], js_prop_result["value"]
                     log.debug(f"  JS DOM walk property: {k!r} = {v!r}")
@@ -605,7 +549,6 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
                 log.debug(f"  JS DOM walk failed: {e}")
 
         # ── Strategy B: Property rows via CSS ────────────────────────────────
-        # Notion uses various class names depending on version; try all known patterns.
         prop_selectors = [
             ".notion-page-property",
             "[class*='property-row']",
@@ -614,19 +557,17 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
             "[class*='notion-property']",
         ]
         for ps in prop_selectors:
-            rows = driver.find_elements(By.CSS_SELECTOR, ps)
+            rows = page.query_selector_all(ps)
             if not rows:
                 continue
             log.debug(f"  property selector {ps!r} → {len(rows)} rows")
             for row in rows:
                 try:
-                    txt = row.text.strip()
+                    txt = (row.inner_text() or "").strip()
                     if not txt:
                         continue
                     lines = [l.strip() for l in txt.splitlines() if l.strip()]
                     if len(lines) < 2:
-                        # Single-line row: key and value may be separated by whitespace only.
-                        # Try splitting by multiple spaces or tabs.
                         parts = re.split(r'\s{2,}|\t', txt, maxsplit=1)
                         if len(parts) < 2:
                             log.debug(f"  skip single-line row: {txt!r}")
@@ -640,14 +581,12 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
                     log.debug(f"  property: {k!r} = {v!r}")
 
                     if k in date_prop_keys and not result["date"]:
-                        try:
-                            te = row.find_element(By.TAG_NAME, "time")
+                        te = row.query_selector("time")
+                        if te:
                             d = extract_date_from_time_el(te)
                             if d:
                                 result["date"] = d
                                 log.info(f"  date from property <time>: {d}")
-                        except Exception:
-                            pass
                         if not result["date"]:
                             d = parse_notion_date(v, fallback_year)
                             if d:
@@ -665,21 +604,23 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
             known_props = ["投稿日", "語言", "分類", "更新日", "別語言版", "Posted", "Date", "Language", "Category"]
             for prop_name in known_props:
                 try:
-                    label_els = driver.find_elements(
-                        By.XPATH, f"//*[normalize-space(text())='{prop_name}']"
+                    label_els = page.query_selector_all(
+                        f"xpath=//*[normalize-space(text())='{prop_name}']"
                     )
                     for label_el in label_els:
                         try:
-                            # Walk up to find the row container (needs up to 6-8 levels in current Notion DOM)
                             container = label_el
                             for _ in range(8):
-                                parent = container.find_element(By.XPATH, "..")
-                                parent_text = parent.text.strip()
+                                handle = container.evaluate_handle("el => el.parentElement")
+                                parent = handle.as_element()
+                                if not parent:
+                                    break
+                                parent_text = (parent.inner_text() or "").strip()
                                 if prop_name in parent_text and len(parent_text) > len(prop_name):
                                     container = parent
                                     break
                                 container = parent
-                            row_text = container.text.strip()
+                            row_text = (container.inner_text() or "").strip()
                             v = row_text.replace(prop_name, "").strip()
                             v = _COPY_NOISE_RE.sub('', v).strip()
                             if v and prop_name not in result["properties"]:
@@ -687,14 +628,12 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
                                 log.debug(f"  XPath property: {prop_name!r} = {v!r}")
 
                             if prop_name in date_prop_keys and not result["date"]:
-                                try:
-                                    te = container.find_element(By.TAG_NAME, "time")
+                                te = container.query_selector("time")
+                                if te:
                                     d = extract_date_from_time_el(te)
                                     if d:
                                         result["date"] = d
                                         log.info(f"  date from XPath <time>: {d}")
-                                except Exception:
-                                    pass
                                 if not result["date"] and v:
                                     d = parse_notion_date(v, fallback_year)
                                     if d:
@@ -709,7 +648,7 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
         if not result["date"]:
             log.debug("  Trying JS property extraction...")
             try:
-                js_props = driver.execute_script("""
+                js_props = page.evaluate("""() => {
                     var results = {};
                     var timeEls = document.querySelectorAll('time');
                     var times = [];
@@ -722,7 +661,6 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
                         });
                     });
                     results.times = times;
-                    // Try to get page-level property containers
                     var propEls = document.querySelectorAll(
                         '[class*="property"], [class*="Property"]'
                     );
@@ -733,7 +671,7 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
                     });
                     results.props = props;
                     return results;
-                """)
+                }""")
                 log.debug(f"  JS extraction: {len(js_props.get('times', []))} time(s), "
                           f"{len(js_props.get('props', []))} prop(s)")
                 for t in js_props.get("times", []):
@@ -746,7 +684,6 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
                                 break
                     if result["date"]:
                         break
-                # Try raw property text
                 if not result["date"]:
                     for p in js_props.get("props", []):
                         if any(k in p for k in date_prop_keys):
@@ -759,7 +696,7 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
                 log.debug(f"  JS extraction failed: {e}")
 
         # ── Strategy E: Page source scan ──────────────────────────────────────
-        page_source = driver.page_source
+        page_source = page.content()
         if not result["date"]:
             log.debug("  Trying page-source date extraction...")
             d = extract_date_from_page_source(page_source, fallback_year)
@@ -782,18 +719,23 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
         ]
         seen_texts: set = set()
         for sel in text_selectors:
-            for b in driver.find_elements(By.CSS_SELECTOR, sel):
-                t = b.text.strip()
+            for b in page.query_selector_all(sel):
+                try:
+                    t = (b.inner_text() or "").strip()
+                except Exception:
+                    continue
                 if t and t not in seen_texts:
                     seen_texts.add(t)
                     result["text"].append(t)
 
-        # Fallback: grab all paragraph-like elements if nothing found
         if not result["text"]:
             log.debug("  No text blocks via specific selectors, trying broad fallback...")
             for tag in ["p", "h1", "h2", "h3"]:
-                for el in driver.find_elements(By.TAG_NAME, tag):
-                    t = el.text.strip()
+                for el in page.query_selector_all(tag):
+                    try:
+                        t = (el.inner_text() or "").strip()
+                    except Exception:
+                        continue
                     if t and len(t) > 10 and t not in seen_texts:
                         seen_texts.add(t)
                         result["text"].append(t)
@@ -802,8 +744,8 @@ def scrape_subpage(driver, page_url: str, fallback_year: str = "") -> dict:
 
         # ── Images ────────────────────────────────────────────────────────────
         img_urls = []
-        img_urls.extend(get_all_img_urls(driver))
-        img_urls.extend(get_bg_image_urls(driver))
+        img_urls.extend(get_all_img_urls(page))
+        img_urls.extend(get_bg_image_urls(page))
         img_urls.extend(extract_images_from_source(page_source))
         seen: set = set()
         result["images"] = [u for u in img_urls if not (u in seen or seen.add(u))]
@@ -827,7 +769,6 @@ def write_markdown(page_dir: Path, record: dict):
     title = record.get("title") or record.get("gallery_title") or "Untitled"
     lines.append(f"# {title}\n")
 
-    # Metadata table
     lines.append("| Field | Value |")
     lines.append("|-------|-------|")
     if record.get("date"):
@@ -842,19 +783,16 @@ def write_markdown(page_dir: Path, record: dict):
         lines.append(f"| Source | [{record['href']}]({record['href']}) |")
     lines.append("")
 
-    # Cover image
     if record.get("cover_file"):
         rel = f"../../covers/{record['cover_file']}"
         lines.append(f"## Cover\n\n![cover]({rel})\n")
 
-    # Text content
     if record.get("text"):
         lines.append("## Content\n")
         for t in record["text"]:
             lines.append(t + "\n")
         lines.append("")
 
-    # Image gallery
     images = record.get("images") or []
     if images:
         lines.append(f"## Images ({len(images)})\n")
@@ -873,17 +811,14 @@ def write_markdown(page_dir: Path, record: dict):
 # Gallery year-group detection
 # ──────────────────────────────────────────────────────────────────────────────
 
-def get_cards_with_years(driver) -> list:
+def get_cards_with_years(page) -> list:
     """
     Use JavaScript to walk the full DOM in order, finding:
     - Year group headers (elements whose trimmed text matches 20XX)
     - Card <a> elements (any internal Notion link with text)
     Returns list of {year, href, title, tags, cover_url}
     """
-    from selenium.webdriver.common.by import By
-
-    # ── Step 1: Use JS to extract all <a> hrefs + text + y-position ──────
-    js_cards = driver.execute_script("""
+    js_cards = page.evaluate("""() => {
         var results = [];
         var anchors = document.querySelectorAll('a[href]');
         anchors.forEach(function(a) {
@@ -896,10 +831,9 @@ def get_cards_with_years(driver) -> list:
             results.push({href: href, text: text, y: y});
         });
         return results;
-    """)
+    }""")
 
-    # ── Step 2: Find year headers via JS ─────────────────────────────────
-    js_years = driver.execute_script("""
+    js_years = page.evaluate("""() => {
         var results = [];
         var all = document.querySelectorAll('*');
         for (var i = 0; i < all.length; i++) {
@@ -912,7 +846,7 @@ def get_cards_with_years(driver) -> list:
             }
         }
         return results;
-    """)
+    }""")
 
     # Deduplicate year headers: same year elements rendered as nested spans give many duplicates.
     # Keep at most one entry per (year, 100px y-bucket).
@@ -929,7 +863,7 @@ def get_cards_with_years(driver) -> list:
     for yh in js_years:
         log.info(f"    Year header: {yh['year']} @ y={yh['y']:.0f}")
 
-    # ── Step 3: Filter to actual gallery cards ───────────────────────────
+    # ── Filter to actual gallery cards ───────────────────────────────────
     card_items = [c for c in js_cards if c['text'] and re.search(r'[0-9a-f]{20,}', c['href'])]
     log.info(f"  Filtered to {len(card_items)} gallery card links")
 
@@ -937,7 +871,7 @@ def get_cards_with_years(driver) -> list:
         card_items = [c for c in js_cards if '\n' in c['text'] and re.search(r'[0-9a-f]{10,}', c['href'])]
         log.info(f"  Fallback: {len(card_items)} candidates")
 
-    # ── Step 4: Sort by y-position, assign years ──────────────────────────
+    # ── Sort by y-position, assign years ──────────────────────────────────
     card_items.sort(key=lambda x: x['y'])
     year_headers = sorted(js_years, key=lambda x: x['y'])
 
@@ -948,7 +882,7 @@ def get_cards_with_years(driver) -> list:
                 assigned = yh['year']
         return assigned
 
-    # ── Step 5: Dedupe and build result ──────────────────────────────────
+    # ── Dedupe and build result ──────────────────────────────────────────
     seen_hrefs = set()
     cards = []
     for item in card_items:
@@ -972,27 +906,29 @@ def get_cards_with_years(driver) -> list:
             "cover_url": None,
         }
 
-        # Get cover
+        # Cover (best-effort: look for bg-image / <img> inside the card link)
         try:
-            card_el = driver.find_element(By.CSS_SELECTOR, 'a[href="%s"]' % href.replace('"', '\\"'))
-            for div in card_el.find_elements(By.CSS_SELECTOR, "[style*='background-image']"):
-                style = div.get_attribute("style") or ""
-                m = re.search(r'url\(["\']?(https?://[^"\')\ \s]+)["\']?\)', style)
-                if m and ".svg" not in m.group(1):
-                    info["cover_url"] = m.group(1)
-                    break
-            if not info["cover_url"]:
-                for img in card_el.find_elements(By.TAG_NAME, "img"):
-                    src = img.get_attribute("src") or ""
-                    if src.startswith("http") and ".svg" not in src:
-                        try:
-                            w = driver.execute_script("return arguments[0].naturalWidth;", img)
-                            if not w or w > 30:
+            escaped = href.replace('"', '\\"')
+            card_el = page.query_selector(f'a[href="{escaped}"]')
+            if card_el:
+                for div in card_el.query_selector_all("[style*='background-image']"):
+                    style = div.get_attribute("style") or ""
+                    m = re.search(r'url\(["\']?(https?://[^"\')\ \s]+)["\']?\)', style)
+                    if m and ".svg" not in m.group(1):
+                        info["cover_url"] = m.group(1)
+                        break
+                if not info["cover_url"]:
+                    for img in card_el.query_selector_all("img"):
+                        src = img.get_attribute("src") or ""
+                        if src.startswith("http") and ".svg" not in src:
+                            try:
+                                w = img.evaluate("el => el.naturalWidth")
+                                if not w or w > 30:
+                                    info["cover_url"] = src
+                                    break
+                            except Exception:
                                 info["cover_url"] = src
                                 break
-                        except Exception:
-                            info["cover_url"] = src
-                            break
         except Exception:
             pass
 
@@ -1005,22 +941,25 @@ def get_cards_with_years(driver) -> list:
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
-def scrape_gallery(url: str, out_dir: Path, headless: bool = True, skip_downloaded: bool = False,
-                   bypass_cloudflare: bool = False, skip_collections: bool = False):
-    from selenium.webdriver.common.by import By
-
-    driver = make_driver(headless, bypass_cloudflare=bypass_cloudflare)
+def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
+                   skip_downloaded: bool = False, skip_collections: bool = False,
+                   profile_dir: Path = None):
+    profile_dir = profile_dir or (out_dir / ".cloak-profile")
+    ctx = make_context(headless, profile_dir)
     try:
+        page = ctx.new_page()
+        page.set_default_timeout(30000)
+
         log.info(f"\n{'='*60}")
         log.info(f"Loading: {url}")
         log.info(f"{'='*60}")
-        driver.get(url)
-        wait_for_page(driver, timeout=30)
+        page.goto(url)
+        wait_for_page(page, timeout=30)
         time.sleep(3)
 
         # ── Click 中文畫廊 tab ─────────────────────────────────────────────
         for label in ["中文畫廊", "中文画廊"]:
-            if click_tab(driver, label):
+            if click_tab(page, label):
                 log.info(f"✓ Clicked '{label}' tab")
                 break
         else:
@@ -1035,16 +974,17 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True, skip_download
             clicked = 0
             for label in load_more_labels:
                 try:
-                    btns = driver.find_elements(
-                        By.XPATH,
-                        f"//*[normalize-space(text())='{label}' or contains(text(),'{label}')]"
+                    btns = page.query_selector_all(
+                        f"xpath=//*[normalize-space(text())='{label}' or contains(text(),'{label}')]"
                     )
                     for btn in btns:
                         try:
-                            driver.execute_script(
-                                "arguments[0].scrollIntoView({block:'center'});", btn)
+                            try:
+                                btn.scroll_into_view_if_needed(timeout=2000)
+                            except Exception:
+                                pass
                             time.sleep(0.3)
-                            driver.execute_script("arguments[0].click();", btn)
+                            btn.evaluate("el => el.click()")
                             log.info(f"  ↓ Clicked '{label}'")
                             clicked += 1
                             time.sleep(2)
@@ -1055,37 +995,36 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True, skip_download
             return clicked
 
         prev_height = 0
-        for _pass in range(20):  # more passes to ensure all content is loaded
-            driver.execute_script("window.scrollTo(0,0);")
+        for _pass in range(20):
+            page.evaluate("window.scrollTo(0,0)")
             time.sleep(0.5)
-            total = driver.execute_script("return document.body.scrollHeight")
+            total = page.evaluate("document.body.scrollHeight")
             pos = 0
             while pos < total:
                 pos += 500
-                driver.execute_script(f"window.scrollTo(0,{pos});")
+                page.evaluate(f"window.scrollTo(0,{pos})")
                 time.sleep(0.3)
-                total = driver.execute_script("return document.body.scrollHeight")
+                total = page.evaluate("document.body.scrollHeight")
             click_all_load_more_visible()
-            new_height = driver.execute_script("return document.body.scrollHeight")
+            new_height = page.evaluate("document.body.scrollHeight")
             log.debug(f"  Pass {_pass + 1}: height={new_height} (prev={prev_height})")
             if new_height == prev_height:
                 break
             prev_height = new_height
         log.info("  ✓ All content loaded")
 
-        slow_scroll(driver)
+        slow_scroll(page)
         time.sleep(3)  # allow any lazily-rendered cards to finish appearing
 
         # ── Collect all cards with year info ──────────────────────────────
         log.info("Collecting cards...")
-        cards = get_cards_with_years(driver)
+        cards = get_cards_with_years(page)
 
         if not cards:
             log.warning("⚠ No cards found — saving debug_source.html")
-            (out_dir / "debug_source.html").write_text(driver.page_source, encoding="utf-8")
+            (out_dir / "debug_source.html").write_text(page.content(), encoding="utf-8")
             return
 
-        # Show year distribution
         from collections import Counter
         year_counts = Counter(c["year"] for c in cards)
         log.info(f"✓ {len(cards)} cards: {dict(sorted(year_counts.items(), reverse=True))}\n")
@@ -1107,7 +1046,6 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True, skip_download
             title = info["title"] or f"untitled_{idx}"
             log.info(f"\n[{idx:03d}/{len(cards)}] [{year}] {title}")
 
-            # ── Skip already-downloaded entries ────────────────────────────────
             if skip_downloaded and info["href"] in downloaded_hrefs:
                 log.info("  → Already downloaded, skipping")
                 continue
@@ -1125,16 +1063,14 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True, skip_download
             # ── Visit sub-page ─────────────────────────────────────────────
             sub = {}
             if info["href"]:
-                sub = scrape_subpage(driver, info["href"], fallback_year=info["year"])
+                sub = scrape_subpage(page, info["href"], fallback_year=info["year"])
             else:
                 log.warning("  (no href for this card)")
 
-            # ── Skip collection-view pages if requested ────────────────────
             if skip_collections and sub.get("is_collection"):
                 log.info("  → Skipped (collection-view page, use --no-skip-collections to include)")
                 continue
 
-            # ── Determine date prefix ──────────────────────────────────────
             post_date = sub.get("date", "")
             if not post_date:
                 log.warning(f"  ⚠ No date found for {title!r}, using year fallback")
@@ -1147,7 +1083,6 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True, skip_download
             page_dir.mkdir(parents=True, exist_ok=True)
             log.info(f"  → folder: {folder_name}")
 
-            # ── Download sub-page images ───────────────────────────────────
             image_records = []
             for i, img_url in enumerate(sub.get("images", []), 1):
                 ext = url_ext(img_url)
@@ -1180,13 +1115,11 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True, skip_download
             log.info(f"  ✓ saved: {year}/{folder_name}/README.md  "
                      f"({len(image_records)} images, {len(record['text'])} text blocks)")
 
-            # ── Update download cache ──────────────────────────────────────
             if skip_downloaded and info["href"]:
                 with cache_file.open("a", encoding="utf-8") as cf:
                     cf.write(info["href"] + "\n")
                 downloaded_hrefs.add(info["href"])
 
-        # ── Global index.md ───────────────────────────────────────────────
         write_index_md(out_dir, all_records)
         build_html(out_dir, all_records, url)
 
@@ -1196,7 +1129,7 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True, skip_download
 
     finally:
         try:
-            driver.quit()
+            ctx.close()
         except Exception:
             pass
 
@@ -1295,34 +1228,35 @@ h3 a:hover{{text-decoration:underline}}
 # ──────────────────────────────────────────────────────────────────────────────
 
 def main():
-    ap = argparse.ArgumentParser(description="Download Notion gallery with year structure.")
+    ap = argparse.ArgumentParser(description="Download Notion gallery with year structure (CloakBrowser edition).")
     ap.add_argument("--url", default="https://hightway420.notion.site/HOME-2d3110e3721d80918573e279b930c277")
     ap.add_argument("--out", default="notion_download")
     ap.add_argument("--no-headless", action="store_true", help="Show Chrome window")
     ap.add_argument("--log", default="notion_downloader.log", help="Log file path")
     ap.add_argument("--skip-downloaded", action="store_true",
                     help="Skip entries whose href is already in the download cache")
-    ap.add_argument("--bypass-cloudflare", action="store_true",
-                    help="Use undetected-chromedriver to bypass Cloudflare bot detection")
     ap.add_argument("--skip-collections", action="store_true",
                     help="Skip pages that contain a Notion collection-view block")
+    ap.add_argument("--profile-dir", default=None,
+                    help="CloakBrowser persistent profile directory (default: <out>/.cloak-profile)")
     args = ap.parse_args()
 
     setup_logging(args.log)
     log.info(f"notion_downloader starting — log: {args.log}")
 
     try:
-        import selenium  # noqa: F401
+        import cloakbrowser  # noqa: F401
     except ImportError:
-        log.error("selenium not installed. Run: pip install selenium")
+        log.error("cloakbrowser not installed. Run: pip install cloakbrowser")
         sys.exit(1)
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
+    profile_dir = Path(args.profile_dir) if args.profile_dir else None
     scrape_gallery(args.url, out_dir, headless=not args.no_headless,
                    skip_downloaded=args.skip_downloaded,
-                   bypass_cloudflare=args.bypass_cloudflare,
-                   skip_collections=args.skip_collections)
+                   skip_collections=args.skip_collections,
+                   profile_dir=profile_dir)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<!--
+  art-title-maker template — variants gallery.
+  ─────────────────────────────────────────────
+  This template is a *starting point*, not a recipe. Before customizing:
+    1. Read SKILL.md step 3 — commit to a single bold aesthetic direction.
+    2. Read references/fonts.md — pick a distinctive hero font that matches
+       the character. Avoid generic Google Fonts defaults.
+    3. Read references/color_theory.md — extract 3–5 hexes from the artwork,
+       set --art-bg, and build the accent stack.
+    4. Read references/layouts.md — pick a composition pattern that has
+       motion (zig-zag / asymmetric / diagonal / scattered). Centered stack
+       is the lazy fallback.
+
+  Strict rules (enforced by the export script too):
+    - `:root --art-bg` = the artwork's actual background color.
+    - Every `.card` must stay `background: transparent`.
+    - Decorations (badges, ribbons, scatter elements) are SEPARATE inner
+      elements with their own backgrounds — not card-plate fills.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title Options</title>
+  <!--
+    The link below loads a broad font palette. Trim it to only the families
+    you actually use in the variants you ship. The point is to make distinctive
+    choices — don't load everything and pick at random.
+  -->
+  <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Bowlby+One&family=Bungee&family=Bungee+Inline&family=Caveat:wght@700&family=Chewy&family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@700;900&family=Cormorant+Garamond:ital,wght@0,700;0,900;1,700;1,900&family=Fredoka:wght@600;700&family=Lobster&family=Marcellus+SC&family=Mochiy+Pop+One&family=Modak&family=Monoton&family=Noto+Serif+JP:wght@700;900&family=Pacifico&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Rampart+One&family=Russo+One&family=Shrikhand&family=Tenor+Sans&family=Ultra&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* CUSTOMIZE: the artwork's actual background color. Sample from the reference image.
+         Solid color is fine; a subtle gradient mimicking the artwork is even better. */
+      --art-bg: #f57aba;
+
+      /* Accent stack — pull these from the character palette, not the defaults below.
+         See references/color_theory.md for the extraction framework. */
+      --text:   #ffffff;
+      --accent: #c41e6e;
+      --shadow: #4a0c20;
+      --metal:  #ffd86b;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: var(--art-bg); }
+    body { display: flex; flex-direction: column; gap: 36px; padding: 48px 24px; align-items: center; min-height: 100vh; }
+
+    .card {
+      width: 720px;
+      /* STRICT — never change. */
+      background: transparent;
+      box-shadow: none;
+      padding: 60px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* ── A — Bubbly Kawaii: chunky display + complementary hard shadow ── */
+    /* Layout: zig-zag offset (see layouts.md #2). Hearts scatter loosely. */
+    .card-a .row { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+    .a-furi  { font-family: 'Mochiy Pop One', sans-serif; font-size: 0.95rem; letter-spacing: 0.5em; color: rgba(255,255,255,0.95); text-shadow: 2px 2px 0 var(--shadow); align-self: flex-start; margin-left: 40px; }
+    .a-hero  { font-family: 'Chewy', cursive; font-size: 6.2rem; color: var(--text); letter-spacing: 0.02em; text-shadow: 5px 6px 0 var(--accent), 9px 12px 0 rgba(74,12,32,0.55); line-height: 1; transform: skewX(-6deg) rotate(-2deg); align-self: flex-start; margin-top: 8px; margin-left: -20px; }
+    .a-amp   { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 700; font-size: 4rem; color: var(--metal); text-shadow: 2px 2px 0 var(--shadow); align-self: center; margin-top: 6px; }
+    .a-hero2 { font-family: 'Chewy', cursive; font-size: 6.2rem; color: var(--text); letter-spacing: 0.02em; text-shadow: 5px 6px 0 var(--accent), 9px 12px 0 rgba(74,12,32,0.55); line-height: 1; transform: skewX(-6deg) rotate(-2deg); align-self: flex-end; margin-right: -10px; }
+    .a-en    { font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.42em; color: var(--metal); margin-top: 24px; text-transform: uppercase; text-shadow: 2px 2px 0 var(--shadow); align-self: center; }
+    .a-hearts{ display: flex; gap: 18px; margin-top: 14px; font-size: 1.35rem; color: var(--text); text-shadow: 2px 2px 0 var(--shadow); align-self: center; }
+    /* Loose scatter hearts (absolute) */
+    .a-scatter { position: absolute; font-size: 1rem; color: var(--text); opacity: 0.85; text-shadow: 2px 2px 0 var(--shadow); pointer-events: none; }
+
+    /* ── B — Editorial Serif: split column, broken-word fragments ────── */
+    /* Layout: side-by-side asymmetric (see layouts.md #8). High-contrast serif. */
+    .card-b { flex-direction: row; align-items: stretch; gap: 36px; }
+    .b-left { flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; }
+    .b-rule { width: 90px; height: 1px; background: var(--metal); margin-bottom: 18px; }
+    .b-hero { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 900; font-size: 6.6rem; color: var(--text); line-height: 0.95; letter-spacing: -0.01em; text-shadow: 0 3px 18px rgba(255,255,255,0.4), 0 6px 26px var(--shadow); }
+    .b-right { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding-left: 24px; border-left: 1px solid rgba(255,255,255,0.3); }
+    .b-furi  { font-family: 'Noto Serif JP', serif; font-size: 1rem; letter-spacing: 0.55em; color: rgba(255,255,255,0.95); }
+    .b-kata  { font-family: 'Noto Serif JP', serif; font-weight: 700; font-size: 1.6rem; letter-spacing: 0.3em; color: var(--text); }
+    .b-en    { font-family: 'Marcellus SC', serif; font-size: 0.95rem; letter-spacing: 0.32em; color: var(--metal); text-transform: uppercase; }
+
+    /* ── C — Sticker Pop: thick stroke + hard offset + scatter stars ─── */
+    /* Layout: sticker badge (see layouts.md #9). High-impact stroke. */
+    .card-c .c-badge { background: var(--text); border-radius: 100px; padding: 6px 26px 7px; font-family: 'Bungee', sans-serif; font-size: 0.8rem; letter-spacing: 0.42em; color: var(--accent); box-shadow: 0 4px 0 var(--shadow); margin-bottom: 22px; transform: rotate(-3deg); }
+    .c-hero  { font-family: 'Bungee', sans-serif; font-size: 6rem; color: var(--text); letter-spacing: 0.04em; -webkit-text-stroke: 6px var(--accent); paint-order: stroke fill; text-shadow: 6px 8px 0 var(--shadow); line-height: 1; transform: skewX(-4deg); }
+    .c-kata  { font-family: 'Bowlby One', sans-serif; font-size: 2.4rem; color: var(--text); -webkit-text-stroke: 3px var(--accent); paint-order: stroke fill; text-shadow: 4px 6px 0 var(--shadow); letter-spacing: 0.32em; margin-top: 14px; }
+    .c-furi  { font-family: 'Bungee', sans-serif; font-size: 0.86rem; letter-spacing: 0.36em; color: var(--text); margin-top: 18px; text-shadow: 2px 2px 0 var(--accent), 3px 3px 0 var(--shadow); }
+    .c-deco  { margin-top: 14px; font-size: 1.5rem; letter-spacing: 0.32em; color: var(--metal); text-shadow: 2px 2px 0 var(--accent), 3px 3px 0 var(--shadow); }
+
+    /* ── D — Heraldic Elegance: ornament + Roman caps + script accent ── */
+    /* Layout: centered stack with ornamental flourishes (justify the choice — */
+    /* centered is OK here because the ornaments do the rhythm work). */
+    .d-ornament { font-family: 'Cinzel Decorative', serif; font-weight: 700; font-size: 1.4rem; color: var(--metal); letter-spacing: 0.3em; margin-bottom: 16px; opacity: 0.95; text-shadow: 0 0 12px rgba(255,216,107,0.5); }
+    .d-furi   { font-family: 'Noto Serif JP', serif; font-size: 0.9rem; letter-spacing: 0.65em; color: rgba(255,255,255,0.95); margin-bottom: 8px; text-shadow: 0 0 10px rgba(255,255,255,0.4); }
+    .d-hero   { font-family: 'Cinzel Decorative', serif; font-weight: 900; font-size: 5rem; letter-spacing: 0.14em; color: var(--text); line-height: 1; text-transform: uppercase; text-shadow: 0 0 22px rgba(255,255,255,0.6), 0 0 42px rgba(255,216,107,0.45), 0 3px 6px var(--shadow); }
+    .d-flourish { width: 200px; height: 18px; margin: 18px auto; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .d-flourish::before, .d-flourish::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--metal), transparent); }
+    .d-flourish::after { background: linear-gradient(90deg, var(--metal), transparent); }
+    .d-flourish span { color: var(--metal); font-size: 1.2rem; }
+    .d-script { font-family: 'Pacifico', cursive; font-size: 2.4rem; color: var(--text); letter-spacing: 0.02em; text-shadow: 0 0 14px rgba(255,255,255,0.5), 0 2px 8px var(--shadow); transform: rotate(-2deg); }
+    .d-en     { font-family: 'Marcellus SC', serif; font-size: 1rem; letter-spacing: 0.4em; color: var(--metal); margin-top: 18px; text-transform: uppercase; text-shadow: 0 0 8px rgba(255,216,107,0.4); }
+
+    /* Variant divider (preview only — invisible because cards are still transparent) */
+    .divider { height: 1px; width: 80%; background: rgba(255,255,255,0.2); }
+  </style>
+</head>
+<body>
+
+  <!-- ─ A — Bubbly Kawaii, zig-zag layout, complementary hard shadow ─ -->
+  <div class="card card-a" id="card-a">
+    <span class="a-scatter" style="top: 30px; left: 80px;">♡</span>
+    <span class="a-scatter" style="top: 50px; right: 120px;">✦</span>
+    <span class="a-scatter" style="bottom: 60px; left: 60px;">♥</span>
+    <span class="a-scatter" style="bottom: 80px; right: 70px;">♡</span>
+    <div class="row">
+      <div class="a-furi">HERO NAME</div>
+      <div class="a-hero">HERO</div>
+      <div class="a-amp">&amp;</div>
+      <div class="a-hero2">WORD</div>
+      <div class="a-en">Title Romaji</div>
+      <div class="a-hearts">♡ ♥ ♡</div>
+    </div>
+  </div>
+
+  <!-- ─ B — Editorial Serif, asymmetric split column ─ -->
+  <div class="card card-b" id="card-b">
+    <div class="b-left">
+      <div class="b-rule"></div>
+      <div class="b-hero">Hero<br>Word</div>
+    </div>
+    <div class="b-right">
+      <div class="b-furi">ふりがな</div>
+      <div class="b-kata">名前 カタカナ</div>
+      <div class="b-en">Title Romaji</div>
+    </div>
+  </div>
+
+  <!-- ─ C — Sticker Pop, badge + thick stroke + hard shadow ─ -->
+  <div class="card card-c" id="card-c">
+    <div class="c-badge">SUBTITLE</div>
+    <div class="c-hero">HERO</div>
+    <div class="c-kata">カタカナ</div>
+    <div class="c-furi">ふりがな &nbsp;·&nbsp; TITLE ROMAJI</div>
+    <div class="c-deco">★ ☆ ★</div>
+  </div>
+
+  <!-- ─ D — Heraldic Elegance, ornaments + Roman caps + script ─ -->
+  <div class="card card-d" id="card-d">
+    <div class="d-ornament">✦ ❖ ✦</div>
+    <div class="d-furi">ふりがな</div>
+    <div class="d-hero">Hero Word</div>
+    <div class="d-flourish"><span>❖</span></div>
+    <div class="d-script">script accent</div>
+    <div class="d-en">Title Romaji</div>
+  </div>
+
+</body>
+</html>

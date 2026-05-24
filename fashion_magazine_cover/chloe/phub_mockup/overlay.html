@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Kuro LIVE Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Hachi+Maru+Pop&family=Klee+One:wght@400;600&family=Caveat:wght@500;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink-top: #ED4DA3;
+    --pink-bot: #FAB5D3;
+    --ph-orange: #FF9000;
+    --live-red: #FF1F3A;
+    --silver: #C8CAD6;
+    --ink-white: #FFFFFF;
+    --soft-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    --hard-shadow:
+      -1px -1px 0 rgba(0,0,0,0.55),
+      1px -1px 0 rgba(0,0,0,0.55),
+      -1px 1px 0 rgba(0,0,0,0.55),
+      1px 1px 0 rgba(0,0,0,0.55),
+      0 2px 6px rgba(0,0,0,0.5);
+  }
+
+  html, body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Fredoka', 'Hachi Maru Pop', 'Yu Gothic UI', sans-serif;
+  }
+
+  /* font role aliases */
+  .f-display { font-family: 'Hachi Maru Pop', 'Fredoka', 'Yu Gothic UI', cursive; }
+  .f-ui      { font-family: 'Fredoka', 'Hachi Maru Pop', sans-serif; }
+  .f-hand    { font-family: 'Klee One', 'Caveat', 'Yu Gothic UI', cursive; }
+  .f-script  { font-family: 'Caveat', 'Patrick Hand', cursive; }
+
+  .stage {
+    position: relative;
+    width: 100vw; height: 100vh;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(255,255,255,0.18) 0%, transparent 60%),
+      linear-gradient(180deg, var(--pink-top) 0%, var(--pink-bot) 100%);
+    overflow: hidden;
+  }
+  .cloud {
+    position: absolute;
+    background: rgba(255,255,255,0.4);
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .c1 { top: 8%; left: 12%; width: 14vmin; height: 8vmin; }
+  .c2 { top: 35%; left: 55%; width: 18vmin; height: 11vmin; }
+  .c3 { top: 65%; left: 18%; width: 16vmin; height: 9vmin; opacity: 0.7; }
+  .c4 { top: 22%; right: 25%; width: 12vmin; height: 7vmin; opacity: 0.6; }
+
+  /* ============ TOP BAR ============ */
+  .topbar {
+    position: absolute;
+    top: 2.4vmin;
+    left: 2.6vmin;
+    display: flex;
+    align-items: center;
+    gap: 1.8vmin;
+    z-index: 10;
+  }
+  .ph-logo {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 900;
+    font-size: 3.8vmin;
+    color: var(--ink-white);
+    text-shadow: var(--soft-shadow);
+    letter-spacing: -0.02em;
+    display: inline-flex;
+    align-items: center;
+  }
+  .ph-hub {
+    background: var(--ph-orange);
+    color: #000;
+    padding: 0.06em 0.32em 0.12em;
+    border-radius: 0.18em;
+    margin-left: 0.12em;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7vmin;
+    background: var(--live-red);
+    color: var(--ink-white);
+    font-weight: 900;
+    font-size: 2vmin;
+    letter-spacing: 0.12em;
+    padding: 0.7vmin 1.6vmin;
+    border-radius: 999px;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.15),
+      0 0 14px rgba(255,31,58,0.5);
+    font-family: 'Fredoka', sans-serif;
+  }
+  .live-dot {
+    width: 1.1vmin; height: 1.1vmin;
+    background: white; border-radius: 50%;
+  }
+  .viewers {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6vmin;
+    color: white;
+    font-weight: 700;
+    font-size: 1.9vmin;
+    text-shadow: var(--soft-shadow);
+    font-family: 'Fredoka', sans-serif;
+  }
+  .viewers svg { width: 2.2vmin; height: 2.2vmin; }
+  .viewers .num { font-weight: 800; }
+  .viewers .lbl { opacity: 0.85; font-weight: 600; font-size: 1.5vmin; }
+
+  /* ============ TOP-RIGHT MICRO INTERACT ============ */
+  .interact {
+    position: absolute;
+    top: 2.6vmin;
+    right: 2.6vmin;
+    display: flex;
+    gap: 1.1vmin;
+    z-index: 10;
+    align-items: center;
+  }
+  .ix-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55vmin;
+    background: rgba(20,16,28,0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    font-size: 1.7vmin;
+    font-weight: 700;
+    padding: 0.7vmin 1.4vmin;
+    border-radius: 999px;
+    border: 1.5px solid rgba(255,255,255,0.22);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    font-family: 'Fredoka', sans-serif;
+  }
+  .ix-pill svg { width: 1.9vmin; height: 1.9vmin; opacity: 0.95; }
+  .ix-pill.follow {
+    background: var(--live-red);
+    border-color: rgba(255,255,255,0.35);
+    color: white;
+    box-shadow: 0 0 12px rgba(255,31,58,0.4);
+  }
+
+  /* ============ TRANSPARENT CHAT ============ */
+  .chat {
+    position: absolute;
+    right: 2.4vmin;
+    bottom: 22vmin;
+    width: 34vw;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0.8vmin;
+    z-index: 5;
+    pointer-events: none;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 100%);
+  }
+  .msg {
+    font-size: 2.2vmin;
+    line-height: 1.35;
+    color: white;
+    text-shadow: var(--hard-shadow);
+    font-family: 'Klee One', 'Hachi Maru Pop', 'Yu Gothic UI', cursive;
+    font-weight: 400;
+    word-wrap: break-word;
+  }
+  .msg .username { font-weight: 800; margin-right: 0.3em; }
+  .msg-badge {
+    display: inline-block;
+    padding: 0.05em 0.4em 0.1em;
+    border-radius: 0.2em;
+    font-size: 0.8em;
+    font-weight: 900;
+    margin-right: 0.3em;
+    font-family: 'Fredoka', sans-serif;
+    letter-spacing: 0.04em;
+    vertical-align: 0.1em;
+    text-shadow: none;
+  }
+  .msg-badge.mod { background: #5DC270; color: white; }
+  .msg-badge.sub { background: #C882FF; color: white; }
+  .msg-badge.vip { background: #FF5A8C; color: white; }
+  .msg.superchat {
+    background: linear-gradient(95deg, rgba(255,144,0,0.95), rgba(255,184,84,0.95));
+    color: #1a1100;
+    padding: 0.8vmin 1.4vmin;
+    border-radius: 1vmin;
+    text-shadow: none;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(255,144,0,0.35);
+    margin: 0.5vmin 0;
+  }
+  .msg.superchat .username { color: #1a1100; }
+  .sc-amount {
+    display: inline-block;
+    margin-left: 0.4em;
+    font-weight: 900;
+    font-size: 1.05em;
+  }
+
+  /* ============ BOTTOM LEFT TITLE BLOCK ============ */
+  .bottom-block {
+    position: absolute;
+    bottom: 6vmin;
+    left: 2.6vmin;
+    max-width: 70vw;
+    color: white;
+    z-index: 6;
+  }
+  .title {
+    font-family: 'Hachi Maru Pop', 'Fredoka', 'Yu Gothic UI', cursive;
+    font-weight: 400;
+    font-size: 3.8vmin;
+    line-height: 1.2;
+    margin: 0;
+    text-shadow: var(--soft-shadow), 0 0 1px rgba(0,0,0,0.6);
+    letter-spacing: 0.01em;
+  }
+  .subtitle {
+    font-family: 'Caveat', cursive;
+    font-size: 2.4vmin;
+    color: rgba(255,230,240,0.95);
+    margin-top: 0.3vmin;
+    letter-spacing: 0.01em;
+    font-weight: 500;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .channel-row {
+    display: flex;
+    align-items: center;
+    gap: 1.2vmin;
+    margin-top: 1.8vmin;
+    font-family: 'Hachi Maru Pop', 'Fredoka', 'Yu Gothic UI', cursive;
+    font-weight: 400;
+    font-size: 2.3vmin;
+    text-shadow: var(--soft-shadow);
+  }
+  .avatar {
+    width: 4vmin;
+    height: 4vmin;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #C8CAD6 0%, #8a8a9a 100%);
+    border: 0.35vmin solid var(--live-red);
+    box-shadow: 0 0 8px rgba(255,31,58,0.4);
+  }
+  .verified {
+    color: var(--ph-orange);
+    font-size: 1.6vmin;
+  }
+  .followers {
+    color: rgba(255,220,235,0.8);
+    font-weight: 400;
+    font-size: 1.7vmin;
+    margin-left: 0.5vmin;
+  }
+  .tags {
+    display: flex;
+    gap: 0.9vmin;
+    margin-top: 1.4vmin;
+    flex-wrap: wrap;
+  }
+  .tag {
+    border: 2px dashed rgba(255,255,255,0.75);
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 0.5vmin 1.4vmin;
+    border-radius: 1.5vmin;
+    font-size: 1.9vmin;
+    color: white;
+    font-family: 'Klee One', 'Hachi Maru Pop', 'Yu Gothic UI', cursive;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+  .tag:nth-child(1) { transform: rotate(-2deg); }
+  .tag:nth-child(2) { transform: rotate(1.5deg); }
+  .tag:nth-child(3) { transform: rotate(-1deg); }
+  .tag:nth-child(4) { transform: rotate(2deg); }
+
+  /* ============ BOTTOM CONTROLS ============ */
+  .controls {
+    position: absolute;
+    bottom: 1.6vmin;
+    left: 2.6vmin;
+    right: 2.6vmin;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    font-size: 1.8vmin;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    z-index: 6;
+  }
+  .controls-left, .controls-right { display: flex; align-items: center; gap: 1.4vmin; }
+  .controls svg { width: 2.4vmin; height: 2.4vmin; fill: white; opacity: 0.95; }
+  .live-mini {
+    background: var(--live-red);
+    padding: 0.2em 0.55em 0.25em;
+    border-radius: 0.3em;
+    font-size: 1.5vmin;
+    letter-spacing: 0.12em;
+    font-weight: 900;
+  }
+  .ts {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    font-weight: 800;
+    font-size: 1.9vmin;
+  }
+  .quality-chip {
+    border: 1.5px solid rgba(255,255,255,0.75);
+    padding: 0.1em 0.45em;
+    border-radius: 0.25em;
+    font-size: 1.4vmin;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+  }
+
+  .progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0.6vmin;
+    background: rgba(255,255,255,0.2);
+    z-index: 7;
+  }
+  .progress-fill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--live-red) 0%, #FF6088 100%);
+    box-shadow: 0 -1px 8px rgba(255,31,58,0.55);
+  }
+  .progress-dot {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translate(50%, -50%);
+    width: 1.7vmin;
+    height: 1.7vmin;
+    background: white;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 0.5vmin rgba(255,31,58,0.4),
+      0 0 16px rgba(255,31,58,0.7);
+  }
+
+  /* ============ TALL-PORTRAIT TWEAKS (9:16) ============ */
+  @media (max-aspect-ratio: 3/4) {
+    .chat {
+      width: 60vw;
+      bottom: 28vh;
+      max-height: 38vh;
+    }
+    .bottom-block { max-width: 92vw; }
+    .title { font-size: 2.6vmin; }
+    .interact { flex-wrap: wrap; max-width: 50vw; justify-content: flex-end; }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <!-- soft cloud specks -->
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+    <div class="cloud c4"></div>
+
+    <!-- top bar -->
+    <div class="topbar">
+      <div class="ph-logo">Porn<span class="ph-hub">Hub</span></div>
+      <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+      <div class="viewers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+        <span class="num" id="cfg-viewers">12,453</span><span class="lbl" id="cfg-viewers-label">watching</span>
+      </div>
+    </div>
+
+    <!-- top-right micro interact -->
+    <div class="interact" id="cfg-interact">
+      <div class="ix-pill">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.5-9-9c-1.5-3.5 1-7 4.5-7 2 0 3.5 1 4.5 2.5C13 6 14.5 5 16.5 5c3.5 0 6 3.5 4.5 7-2 4.5-9 9-9 9z"/></svg>
+        <span id="cfg-likes">24.8K</span>
+      </div>
+      <div class="ix-pill follow" id="cfg-follow">+ FOLLOW</div>
+      <div class="ix-pill">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5c5.8 0 10.5 4.7 10.5 10.5S17.8 22.5 12 22.5 1.5 17.8 1.5 12 6.2 1.5 12 1.5zm.9 4h-1.8v1.6c-2 .3-3.3 1.7-3.3 3.5 0 1.6 1 2.6 3 3.1l1.4.3c1.2.3 1.7.7 1.7 1.4 0 .9-.8 1.5-2 1.5-1.3 0-2.2-.6-2.4-1.6H8c.2 2 1.6 3.2 3.6 3.5V19h1.8v-1.4c2.1-.3 3.5-1.7 3.5-3.6 0-1.7-1-2.8-3.1-3.3l-1.2-.3c-1.2-.3-1.7-.6-1.7-1.3 0-.8.7-1.3 1.7-1.3 1.1 0 1.8.5 1.9 1.4h2.2c-.1-1.8-1.5-3.1-3.4-3.4V5.5z"/></svg>
+        <span id="cfg-tip">TIP</span>
+      </div>
+    </div>
+
+    <!-- transparent chat overlay -->
+    <div class="chat" id="cfg-chat">
+      <div class="msg"><span class="msg-badge mod">MOD</span><span class="username" style="color:#ffb4dc">Hoshino_07</span>今日の衣装めっちゃかわいい！</div>
+      <div class="msg"><span class="username" style="color:#b4dcff">yume_chan</span>Kuroちゃん配信ありがと〜</div>
+      <div class="msg"><span class="msg-badge sub">SUB</span><span class="username" style="color:#dcffba">midnight_rin</span>wig がすごく似合ってる</div>
+      <div class="msg"><span class="username" style="color:#ffdca0">bunny_lover</span>bunny suit 最高 🐰</div>
+      <div class="msg"><span class="username" style="color:#c8c8ff">acid_pink</span>the outfit is sooo cute</div>
+      <div class="msg superchat"><span class="msg-badge vip">VIP</span><span class="username">sakura_mochi</span>ずっと応援してます！<span class="sc-amount">¥5,000</span></div>
+      <div class="msg"><span class="username" style="color:#ffc8c8">kageyama_77</span>次は猫耳お願いします！</div>
+      <div class="msg"><span class="username" style="color:#ffb4dc">noir_fox</span>色合い綺麗</div>
+      <div class="msg"><span class="msg-badge sub">SUB</span><span class="username" style="color:#c8ffe8">lunaria</span>Kuro様今夜も推せる</div>
+      <div class="msg"><span class="username" style="color:#ffd0a0">velvet_sage</span>live長くてもいい〜</div>
+      <div class="msg"><span class="username" style="color:#d8c8ff">__pinkstatic</span>the lighting is perfect</div>
+    </div>
+
+    <!-- bottom title block -->
+    <div class="bottom-block">
+      <h1 class="title" id="cfg-title">クロの深夜コスプレ雑談 #142 — 黒バニー衣装テスト</h1>
+      <div class="subtitle" id="cfg-subtitle">Kuro's Late-Night Cosplay Talk · Episode 142</div>
+      <div class="channel-row">
+        <div class="avatar"></div>
+        <span id="cfg-channel-name">Kuro クロ</span>
+        <span class="verified">◆</span>
+        <span class="followers" id="cfg-followers">342K followers</span>
+      </div>
+      <div class="tags" id="cfg-tags">
+        <span class="tag">#cosplay</span>
+        <span class="tag">#zatsudan</span>
+        <span class="tag">#深夜</span>
+        <span class="tag">#JP/EN</span>
+      </div>
+    </div>
+
+    <!-- bottom controls -->
+    <div class="controls">
+      <div class="controls-left">
+        <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+        <span class="live-mini" id="cfg-live-mini">● LIVE</span>
+        <span class="ts" id="cfg-elapsed">02:14:38</span>
+      </div>
+      <div class="controls-right">
+        <svg viewBox="0 0 24 24"><path d="M5 9v6h4l5 4V5L9 9H5z"/><path d="M16 8a5 5 0 0 1 0 8" stroke="white" stroke-width="2" fill="none"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm9 4l-2-1-1-2 1-2-2-2-2 1-2-1-1-2h-2l-1 2-2 1-2-1-2 2 1 2-1 2-2 1v2l2 1 1 2-1 2 2 2 2-1 2 1 1 2h2l1-2 2-1 2 1 2-2-1-2 1-2 2-1z" fill-rule="evenodd"/></svg>
+        <span class="quality-chip" id="cfg-quality">4K</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </div>
+    </div>
+
+    <div class="progress">
+      <div class="progress-fill"></div>
+      <div class="progress-dot"></div>
+    </div>
+  </div>
+</body>
+</html>

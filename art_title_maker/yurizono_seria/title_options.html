@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>百合園セイア — Title Options</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Noto+Serif+JP:wght@700;900&family=M+PLUS+Rounded+1c:wght@400;700;800&family=Kaisei+Opti:wght@400;700&family=Shippori+Mincho+B1:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #2a2a30; }
+    body { display: flex; flex-direction: column; gap: 36px; padding: 36px; align-items: center; font-family: sans-serif; }
+
+    .label {
+      color: #aaa; font-size: 0.78rem; letter-spacing: 0.2em;
+      text-transform: uppercase; align-self: center;
+    }
+
+    .card {
+      width: 760px;
+      background: transparent;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 64px 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* ────────────────────────────────────────────────────────────
+       A — Holy Gold Plate (filled cream/gold background)
+       Big serif kanji on a soft cream-to-peach plate, gold detail.
+       Suits the angelic halo + blonde palette; reads cleanly on art.
+    ──────────────────────────────────────────────────────────── */
+    .card-a {
+      background: linear-gradient(160deg, #fffdf4 0%, #fff1d6 45%, #ffe0b0 100%);
+      border-radius: 22px;
+      box-shadow:
+        0 0 0 2px rgba(212,165,80,0.55),
+        0 0 0 6px rgba(255,250,235,0.9),
+        0 0 0 8px rgba(212,165,80,0.35),
+        0 18px 50px rgba(120,80,20,0.25);
+    }
+    .a-halo-ring {
+      width: 92px; height: 92px;
+      border-radius: 50%;
+      border: 3px solid #d4a550;
+      box-shadow: 0 0 18px rgba(255,210,120,0.7), inset 0 0 12px rgba(255,210,120,0.4);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+      background: radial-gradient(circle, rgba(255,235,180,0.6) 0%, rgba(255,235,180,0) 70%);
+    }
+    .a-halo-ring i {
+      font-family: 'Noto Serif JP', serif; font-style: normal;
+      font-size: 2.4rem; color: #c08820;
+      text-shadow: 0 2px 6px rgba(212,165,80,0.4);
+    }
+    .a-furi {
+      font-family: 'Shippori Mincho B1', 'Noto Serif JP', serif;
+      font-size: 1.05rem; font-weight: 700; letter-spacing: 0.55em;
+      color: #b88a30; margin-bottom: 6px;
+    }
+    .a-kanji {
+      font-family: 'Shippori Mincho B1', 'Noto Serif JP', serif;
+      font-weight: 800; font-size: 5.4rem;
+      letter-spacing: 0.18em; line-height: 1;
+      background: linear-gradient(180deg, #b8842c 0%, #d4a550 45%, #e8c170 60%, #b8842c 100%);
+      -webkit-background-clip: text; background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 2px 0 #fff8e4);
+    }
+    .a-rule { width: 60%; height: 1.5px; margin: 20px 0 16px; background: linear-gradient(90deg, transparent, #d4a550, transparent); }
+    .a-seia {
+      font-family: 'Shippori Mincho B1', 'Noto Serif JP', serif;
+      font-weight: 700; font-size: 2.6rem; letter-spacing: 0.55em;
+      color: #8c5e10;
+      text-shadow: 0 2px 0 #fff8e4;
+    }
+    .a-en {
+      font-family: 'Kaisei Opti', serif;
+      font-size: 1rem; letter-spacing: 0.45em; text-transform: uppercase;
+      color: #b88a30; margin-top: 20px;
+    }
+    .a-subline {
+      font-family: 'Kaisei Opti', serif;
+      font-size: 0.72rem; letter-spacing: 0.4em; text-transform: uppercase;
+      color: rgba(140,94,16,0.6); margin-top: 6px;
+    }
+
+    /* ────────────────────────────────────────────────────────────
+       B — Divine Serif (transparent, white+gold glow)
+       Floating elegant title; relies on glow to read on the art.
+    ──────────────────────────────────────────────────────────── */
+    .b-top-rule, .b-bottom-rule { width: 78%; display: flex; align-items: center; gap: 14px; }
+    .b-top-rule    { margin-bottom: 22px; }
+    .b-bottom-rule { margin-top: 22px; }
+    .b-top-rule span, .b-bottom-rule span { flex: 1; height: 1.5px; background: linear-gradient(90deg, transparent, rgba(255,225,160,0.95), transparent); }
+    .b-top-rule i, .b-bottom-rule i { font-family:'Noto Serif JP',serif; font-style: normal; font-size: 1.1rem; color: #ffe1a0; text-shadow: 0 0 10px rgba(255,210,120,0.85); }
+    .b-furi {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 1rem; letter-spacing: 0.7em;
+      color: #fff; margin-bottom: 12px;
+      text-shadow: 0 0 10px rgba(255,225,160,0.7), 0 0 4px rgba(255,255,255,0.6);
+    }
+    .b-kanji {
+      font-family: 'Noto Serif JP', 'Shippori Mincho B1', serif;
+      font-weight: 900; font-size: 5rem;
+      letter-spacing: 0.22em; color: #fff;
+      text-shadow:
+        0 0 18px rgba(255,255,255,0.9),
+        0 0 36px rgba(255,215,140,0.75),
+        0 4px 18px rgba(160,110,30,0.5);
+    }
+    .b-divider { width: 110px; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,225,160,0.95), transparent); margin: 20px auto; }
+    .b-seia {
+      font-family: 'Noto Serif JP', serif;
+      font-weight: 700; font-size: 2.3rem; letter-spacing: 0.65em;
+      color: #fff;
+      text-shadow: 0 0 14px rgba(255,225,160,0.8), 0 0 4px rgba(255,255,255,0.7);
+    }
+    .b-en {
+      font-family: 'Kaisei Opti', serif;
+      font-size: 0.95rem; letter-spacing: 0.4em; text-transform: uppercase;
+      color: rgba(255,245,220,0.95); margin-top: 20px;
+      text-shadow: 0 0 8px rgba(255,210,120,0.65);
+    }
+
+    /* ────────────────────────────────────────────────────────────
+       C — Sky Badge Pop (filled soft-blue plate)
+       Bold playful title with gold outline + light-blue plate.
+       Picks up the character's blue accents.
+    ──────────────────────────────────────────────────────────── */
+    .card-c {
+      background: linear-gradient(160deg, #e9f3fb 0%, #cfe2f3 50%, #b8d3ea 100%);
+      border-radius: 28px;
+      box-shadow:
+        0 0 0 3px #fff,
+        0 0 0 6px #d4a550,
+        0 0 0 9px rgba(255,255,255,0.85),
+        0 20px 55px rgba(40,80,140,0.32);
+    }
+    .c-badge {
+      background: linear-gradient(90deg,#ffd97a,#ffb84a);
+      border-radius: 100px;
+      padding: 6px 26px 7px;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 800; font-size: 0.85rem; letter-spacing: 0.4em;
+      color: #5a3a06;
+      box-shadow: 0 4px 0 #b87c20, 0 8px 14px rgba(180,120,40,0.4);
+      margin-bottom: 22px;
+      text-transform: uppercase;
+    }
+    .c-kanji {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 900; font-size: 5.4rem;
+      color: #fff;
+      -webkit-text-stroke: 5px #c4881e;
+      paint-order: stroke fill;
+      text-shadow: 5px 7px 0 #8a5a10, 6px 8px 0 rgba(40,80,140,0.35);
+      letter-spacing: 0.12em; line-height: 1;
+    }
+    .c-seia {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 900; font-size: 2.8rem;
+      color: #fff;
+      -webkit-text-stroke: 4px #c4881e;
+      paint-order: stroke fill;
+      text-shadow: 4px 6px 0 #8a5a10;
+      letter-spacing: 0.4em; margin-top: 14px;
+    }
+    .c-furi {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 0.95rem; font-weight: 700; letter-spacing: 0.45em;
+      color: #2b4a78; margin-top: 22px;
+      text-shadow: 1px 1px 0 #fff;
+    }
+    .c-deco { margin-top: 14px; font-size: 1.4rem; letter-spacing: 0.3em; color: #c4881e; text-shadow: 1px 1px 0 #fff; }
+
+    /* ────────────────────────────────────────────────────────────
+       D — Dreamy Halo (transparent, soft glow)
+       Ethereal serif with white/gold glow + star ornaments.
+    ──────────────────────────────────────────────────────────── */
+    .d-star-row { display: flex; gap: 12px; font-size: 1.1rem; color: #fff; letter-spacing: 0.15em; margin-bottom: 22px; opacity: 0.9; text-shadow: 0 0 10px rgba(255,225,160,0.8); }
+    .d-furi {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 1rem; letter-spacing: 0.8em;
+      color: rgba(255,253,240,0.95); margin-bottom: 10px;
+      text-shadow: 0 0 10px rgba(255,225,160,0.7);
+    }
+    .d-kanji {
+      font-family: 'Noto Serif JP', serif;
+      font-weight: 900; font-size: 4.8rem;
+      letter-spacing: 0.26em; color: #fff;
+      text-shadow:
+        0 0 24px rgba(255,255,255,0.9),
+        0 0 48px rgba(255,200,120,0.75),
+        0 0 72px rgba(255,170,80,0.45);
+    }
+    .d-line { width: 140px; height: 1.5px; background: linear-gradient(90deg, transparent, rgba(255,225,160,0.9), transparent); margin: 22px auto; }
+    .d-seia {
+      font-family: 'Noto Serif JP', serif;
+      font-weight: 700; font-size: 2.1rem; letter-spacing: 0.7em;
+      color: #fff;
+      text-shadow: 0 0 18px rgba(255,255,255,0.75), 0 0 32px rgba(255,200,120,0.65);
+    }
+    .d-en {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      font-size: 0.85rem; letter-spacing: 0.45em; text-transform: uppercase;
+      color: rgba(255,253,240,0.9); margin-top: 22px;
+      text-shadow: 0 0 10px rgba(255,225,160,0.65);
+    }
+    .d-star-row-b { margin-top: 22px; margin-bottom: 0; }
+  </style>
+</head>
+<body>
+
+  <p class="label">A — Holy Gold Plate (filled · recommended for busy art)</p>
+  <div class="card card-a" id="card-a">
+    <div class="a-halo-ring"><i>✦</i></div>
+    <div class="a-furi">ゆりぞの</div>
+    <div class="a-kanji">百合園</div>
+    <div class="a-rule"></div>
+    <div class="a-seia">セイア</div>
+    <div class="a-en">Yurizono Seria</div>
+    <div class="a-subline">Blue Archive &nbsp;·&nbsp; ブルーアーカイブ</div>
+  </div>
+
+  <p class="label">B — Divine Serif (transparent · floats on the art)</p>
+  <div class="card card-b" id="card-b">
+    <div class="b-top-rule"><span></span><i>✦</i><span></span></div>
+    <div class="b-furi">ゆりぞの</div>
+    <div class="b-kanji">百合園</div>
+    <div class="b-divider"></div>
+    <div class="b-seia">セイア</div>
+    <div class="b-en">Yurizono Seria</div>
+    <div class="b-bottom-rule"><span></span><i>✦</i><span></span></div>
+  </div>
+
+  <p class="label">C — Sky Badge Pop (filled blue · playful)</p>
+  <div class="card card-c" id="card-c">
+    <div class="c-badge">Trinity General School</div>
+    <div class="c-kanji">百合園</div>
+    <div class="c-seia">セイア</div>
+    <div class="c-furi">ゆりぞの &nbsp;·&nbsp; YURIZONO SERIA</div>
+    <div class="c-deco">✦ ☆ ✦</div>
+  </div>
+
+  <p class="label">D — Dreamy Halo (transparent · ethereal)</p>
+  <div class="card card-d" id="card-d">
+    <div class="d-star-row">✦ &nbsp; ✧ &nbsp; ✦ &nbsp; ✧ &nbsp; ✦</div>
+    <div class="d-furi">ゆりぞの</div>
+    <div class="d-kanji">百合園</div>
+    <div class="d-line"></div>
+    <div class="d-seia">セイア</div>
+    <div class="d-en">Yurizono Seria</div>
+    <div class="d-star-row d-star-row-b">✦ &nbsp; ✧ &nbsp; ✦ &nbsp; ✧ &nbsp; ✦</div>
+  </div>
+
+</body>
+</html>

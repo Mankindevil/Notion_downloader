@@ -1,0 +1,48 @@
+{
+  "_comment": "Edit any text below and re-run render.py. Leave a field as null or omit it to keep the HTML default. Username 'color' accepts any CSS color. Chat message 'badge' must be one of: null, 'mod', 'sub', 'vip'. Set 'superchat': true (with optional 'amount') for a SuperChat-style highlighted message.",
+
+  "stream": {
+    "title": "クロの深夜コスプレ雑談 #142 — 黒バニー衣装テスト",
+    "subtitle": "Kuro's Late-Night Cosplay Talk · Episode 142",
+    "viewers": "12,453",
+    "viewers_label": "watching",
+    "elapsed": "02:14:38",
+    "quality": "4K",
+    "live_mini": "● LIVE"
+  },
+
+  "channel": {
+    "name": "Kuro クロ",
+    "followers": "342K followers"
+  },
+
+  "tags": ["#cosplay", "#zatsudan", "#深夜", "#JP/EN"],
+
+  "interact": {
+    "likes": "24.8K",
+    "follow": "+ FOLLOW",
+    "tip": "TIP"
+  },
+
+  "chat": [
+    { "user": "Hoshino_07",   "badge": "mod", "color": "#ffb4dc", "text": "今日の衣装めっちゃかわいい！" },
+    { "user": "yume_chan",    "badge": null,  "color": "#b4dcff", "text": "Kuroちゃん配信ありがと〜" },
+    { "user": "midnight_rin", "badge": "sub", "color": "#dcffba", "text": "wig がすごく似合ってる" },
+    { "user": "bunny_lover",  "badge": null,  "color": "#ffdca0", "text": "bunny suit 最高 🐰" },
+    { "user": "acid_pink",    "badge": null,  "color": "#c8c8ff", "text": "the outfit is sooo cute" },
+    { "user": "sakura_mochi", "badge": "vip", "color": "#1a1100", "text": "ずっと応援してます！", "superchat": true, "amount": "¥5,000" },
+    { "user": "kageyama_77",  "badge": null,  "color": "#ffc8c8", "text": "次は猫耳お願いします！" },
+    { "user": "noir_fox",     "badge": null,  "color": "#ffb4dc", "text": "色合い綺麗" },
+    { "user": "lunaria",      "badge": "sub", "color": "#c8ffe8", "text": "Kuro様今夜も推せる" },
+    { "user": "velvet_sage",  "badge": null,  "color": "#ffd0a0", "text": "live長くてもいい〜" },
+    { "user": "__pinkstatic", "badge": null,  "color": "#d8c8ff", "text": "the lighting is perfect" }
+  ],
+
+  "render": {
+    "outputs": [
+      { "name": "kuro_live_16x9_4k.png", "viewport": [1920, 1080], "scale": 2 },
+      { "name": "kuro_live_4x5_4k.png",  "viewport": [1536, 1920], "scale": 2 },
+      { "name": "kuro_live_9x16_4k.png", "viewport": [1080, 1920], "scale": 2 }
+    ]
+  }
+}

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<!--
+  Chloe — "Child Fornhub" parody cover, additive overlay on existing layout.
+  The input image already carries the masthead + character-name + decorations.
+  This template ADDS magazine elements in the same Pornhub aesthetic (orange +
+  black + white) positioned to avoid overlap with the existing baked-in text.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chloe — Pornhub-style cover</title>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;700;800;900&family=Italianno&family=Marcellus+SC&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #2a2a2a; }
+    body {
+      display: flex; flex-wrap: wrap; gap: 36px; padding: 36px;
+      align-items: flex-start; justify-content: center;
+      font-family: 'Inter', sans-serif;
+    }
+    .cover-id {
+      position: absolute; top: -28px; left: 0;
+      font-family: 'Inter', sans-serif; font-size: 14px;
+      color: rgba(255,255,255,0.6); letter-spacing: 0.2em;
+      z-index: 100; pointer-events: none;
+    }
+
+    .cover {
+      /* Pornhub palette — yellow/orange + black + white */
+      --cw: 1185; --ch: 1600;
+      --ink:    #ffffff;
+      --orange: #ff9000;       /* Pornhub brand orange */
+      --black:  #1a1a1a;
+      --pink:   #ff6fa8;
+      --cover-img: url('V1.png');
+
+      width: calc(var(--cw) * 1px);
+      height: calc(var(--ch) * 1px);
+      position: relative; overflow: hidden;
+      isolation: isolate;
+      color: var(--ink);
+    }
+    .cover > [data-layer] {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+    }
+    .cover > [data-layer="background"] { z-index: 1; }
+    .cover > [data-layer="effects"]    { z-index: 2; pointer-events: none; }
+    .cover > [data-layer="artwork"]    { z-index: 3; }
+
+    .bg-img {
+      position: absolute; inset: 0;
+      background-image: var(--cover-img);
+      background-size: cover; background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* ── ARTWORK: additive elements in Pornhub aesthetic ──────────────── */
+
+    /* Vol pill — top-right, mimics the "hub" black box style */
+    .vol-pill {
+      position: absolute; top: 56px; right: 38px;
+      background: var(--orange); color: var(--black);
+      font-family: 'Anton', sans-serif; font-size: 32px;
+      letter-spacing: 0.08em; padding: 6px 18px 8px;
+      text-transform: uppercase;
+      box-shadow: 5px 5px 0 var(--black);
+      transform: rotate(-2deg);
+    }
+    .vol-pill .price {
+      font-size: 18px; color: var(--black); opacity: 0.8;
+      letter-spacing: 0.12em; margin-left: 8px;
+    }
+
+    /* Right-side cover-line stack — mid-height, fits between subject's hair */
+    .cl-stack {
+      position: absolute; right: 28px; top: 36%;
+      display: flex; flex-direction: column; gap: 18px;
+      max-width: 360px; text-align: right;
+    }
+    .cl {
+      display: inline-block;
+    }
+    .cl-h {
+      font-family: 'Anton', sans-serif;
+      font-size: 38px; letter-spacing: 0.04em;
+      color: var(--ink); line-height: 1;
+      text-transform: uppercase;
+      text-shadow: 3px 3px 0 var(--black);
+    }
+    .cl-tag {
+      display: inline-block; margin-top: 8px;
+      background: var(--black); color: var(--orange);
+      font-family: 'Anton', sans-serif; font-size: 14px;
+      padding: 4px 10px 5px; letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+    /* Accent variant — orange headline */
+    .cl-h.accent { color: var(--orange); text-shadow: 3px 3px 0 var(--black); }
+
+    /* Bottom signature — chunky CHLOE in Pornhub style */
+    .sig {
+      position: absolute; bottom: 110px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; align-items: baseline; gap: 16px;
+    }
+    .sig-name {
+      font-family: 'Anton', sans-serif; font-size: 96px;
+      letter-spacing: -0.02em; color: var(--ink);
+      text-transform: uppercase; line-height: 0.9;
+      text-shadow: 6px 6px 0 var(--black);
+    }
+    .sig-name .x {
+      background: var(--orange); color: var(--black);
+      padding: 4px 12px 6px; font-size: 96px;
+      text-shadow: none; display: inline-block;
+      box-shadow: 4px 4px 0 var(--black);
+    }
+    .sig-tag {
+      font-family: 'Cormorant Garamond', serif; font-style: italic;
+      font-size: 22px; color: var(--ink);
+      text-shadow: 2px 2px 0 var(--black);
+    }
+
+    /* Discretion strip — small, near bottom */
+    .discretion {
+      position: absolute; bottom: 64px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Anton', sans-serif; font-size: 14px;
+      letter-spacing: 0.42em; color: var(--orange);
+      text-transform: uppercase;
+      text-shadow: 2px 2px 0 var(--black);
+    }
+
+    /* Barcode bottom-left */
+    .barcode {
+      position: absolute; bottom: 24px; left: 28px;
+      display: flex; gap: 2px; height: 36px;
+    }
+    .barcode span { display: block; background: var(--ink); }
+    .bc-num {
+      position: absolute; bottom: 6px; left: 28px;
+      font-family: 'Inter', monospace; font-size: 9px;
+      letter-spacing: 0.3em; color: var(--ink);
+    }
+
+    /* Issue stack bottom-right */
+    .iss-stack {
+      position: absolute; bottom: 24px; right: 28px;
+      font-family: 'Anton', sans-serif; font-size: 12px;
+      letter-spacing: 0.32em; color: var(--ink);
+      line-height: 1.6; text-align: right; text-transform: uppercase;
+      text-shadow: 1px 1px 0 var(--black);
+    }
+
+    /* ── EFFECTS: hearts in Pornhub orange/black, complementing existing pink ── */
+    .heart {
+      position: absolute; pointer-events: none;
+      font-family: 'Inter', sans-serif; line-height: 1;
+    }
+    .h1 { top: 220px;  right: 70px;  font-size: 28px; color: var(--orange); transform: rotate(-12deg); }
+    .h2 { top: 50%;    left: 28px;   font-size: 24px; color: var(--black);  transform: rotate(8deg); }
+    .h3 { bottom: 38%; right: 380px; font-size: 22px; color: var(--orange); transform: rotate(20deg); }
+    .h4 { bottom: 28%; left: 40px;   font-size: 18px; color: var(--orange); transform: rotate(-18deg); }
+  </style>
+</head>
+<body>
+
+  <div class="cover" id="cover-pornhub">
+    <div class="cover-id">Chloe — Pornhub-style add-on</div>
+
+    <!-- background: the input image as-is, layout already baked in -->
+    <div data-layer="background">
+      <div class="bg-img"></div>
+    </div>
+
+    <!-- effects: orange/black hearts in negative space, complementing existing pink hearts -->
+    <div data-layer="effects">
+      <div class="heart h1">♥</div>
+      <div class="heart h2">♥</div>
+      <div class="heart h3">♥</div>
+      <div class="heart h4">♥</div>
+    </div>
+
+    <!-- artwork: vol pill + cover-line stack + signature + discretion + barcode + issue stack -->
+    <div data-layer="artwork">
+      <div class="vol-pill">VOL 18<span class="price">¥980</span></div>
+
+      <div class="cl-stack">
+        <div class="cl">
+          <div class="cl-h accent">PREMIUM</div>
+          <div class="cl-h">EDITION</div>
+          <div class="cl-tag">INSIDE · PG 24</div>
+        </div>
+        <div class="cl">
+          <div class="cl-h">KALEID</div>
+          <div class="cl-h">EXCLUSIVE</div>
+          <div class="cl-tag">FEATURE · PG 60</div>
+        </div>
+      </div>
+
+      <div class="sig">
+        <div class="sig-name">CHLOE<span class="x">×</span></div>
+        <div class="sig-tag">spring kaleid issue</div>
+      </div>
+
+      <div class="discretion">★ VIEWER DISCRETION ADVISED ★</div>
+
+      <div class="barcode">
+        <span style="width:3px"></span><span style="width:1.5px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span>
+      </div>
+
+      <div class="iss-stack">VOL 18<br>MAY 26<br>¥980</div>
+    </div>
+  </div>
+
+  <script>
+    (function applyOrientations() {
+      document.querySelectorAll('.cover').forEach(function (el) {
+        var cs = getComputedStyle(el);
+        var cw = parseFloat(cs.getPropertyValue('--cw')) || el.offsetWidth;
+        var ch = parseFloat(cs.getPropertyValue('--ch')) || el.offsetHeight;
+        var ratio = cw / ch;
+        el.classList.remove('landscape', 'portrait', 'square');
+        if (Math.abs(ratio - 1) < 0.05) el.classList.add('square');
+        else if (ratio > 1) el.classList.add('landscape');
+        else el.classList.add('portrait');
+      });
+    })();
+  </script>
+</body>
+</html>

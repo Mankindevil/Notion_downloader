@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<!--
+  fashion-magazine-cover v2 — skeleton gallery
+  ─────────────────────────────────────────────
+  Five token-driven cover skeletons. Each `.cover` is a self-contained canvas
+  that gets screenshotted by scripts/export_covers.py.
+
+  ARCHITECTURE
+    Each .cover has THREE layer groups marked with data-layer:
+      • [data-layer="background"] — subject image + grade filters + vignette
+                                    + rim-light (atmospheric effects that act
+                                    ON the image). Baked into background.png.
+      • [data-layer="effects"]    — discrete decorations (sparkles, lens flare,
+                                    light leaks, ornaments). Exports as
+                                    transparent effects.png.
+      • [data-layer="artwork"]    — all text + barcode. Exports as transparent
+                                    artwork.png.
+
+    The exporter uses these layer groups for `--layered` mode (the default).
+
+  TOKEN-DRIVEN
+    Each .cover is parameterized via CSS variables set inline:
+      --cw, --ch            canvas dimensions (from input image)
+      --ink, --accent,      palette (from character)
+      --paper, --shade
+      --cover-img           background image URL
+      --font-hero,          font stack (per character/mood)
+      --font-display,
+      --font-script,
+      --font-cjk,
+      --font-sans-display
+    The skeleton's CSS uses ONLY these variables — never hard-coded fonts/colors.
+    To make a cover for a specific character, copy a skeleton .cover and override
+    its CSS variables inline (style="--ink: ...; --accent: ...;").
+
+  ASPECT-RATIO-AWARE
+    A short script at the bottom reads --cw/--ch from each .cover and adds
+    .landscape / .portrait / .square classes. Each skeleton has CSS branches
+    for the two orientations. Landscape layouts move mastheads to vertical-left
+    or top-stretched, coverlines to side rails, signatures to the right margin.
+
+  STRICT
+    - Don't add elements without a data-layer attribute. The exporter ignores
+      unannotated children → they won't appear in any layer screenshot.
+    - The .cover element itself has no background; .bg-layer carries it. This
+      lets the layered export show transparent background on effects/artwork
+      shots.
+    - .fx-vignette and .fx-rim-light live in [data-layer="background"]
+      (they are baked image effects, not free-floating decorations).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Illya von Einzbern — Fashion Magazine Covers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Allura&family=Anton&family=Archivo+Black&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;0,6..96,900;1,6..96,400;1,6..96,700;1,6..96,900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,700;0,900;1,400;1,500;1,700;1,900&family=Italianno&family=Marcellus+SC&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@400;700;900&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Oswald:wght@400;700&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ─── Reset + page chrome ─────────────────────────────────────────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #2a2a2a; }
+    body {
+      display: flex; flex-wrap: wrap; gap: 36px; padding: 36px;
+      align-items: flex-start; justify-content: center;
+      font-family: 'Inter', sans-serif;
+    }
+    .cover-id {
+      position: absolute; top: -28px; left: 0;
+      font-family: 'Inter', sans-serif; font-size: 14px;
+      color: rgba(255,255,255,0.6); letter-spacing: 0.2em;
+      z-index: 100; pointer-events: none;
+    }
+
+    /* ─── Cover canvas + layer groups ─────────────────────────────────── */
+    .cover {
+      /* Token defaults — override per-cover via inline style. */
+      --cw: 1240; --ch: 1650;
+      --ink:    #ffffff;
+      --accent: #e8b43a;
+      --paper:  #fff5e8;
+      --shade:  rgba(0,0,0,0.45);
+      --font-hero:   'Bodoni Moda', 'Playfair Display', serif;
+      --font-display: 'Italianno', cursive;
+      --font-script: 'Italianno', cursive;
+      --font-serif:  'Cormorant Garamond', serif;
+      --font-cjk:    'Noto Serif SC', serif;
+      --font-sans-display: 'Anton', sans-serif;
+      --font-smallcaps: 'Marcellus SC', serif;
+      --cover-img: none;
+
+      width:  calc(var(--cw) * 1px);
+      height: calc(var(--ch) * 1px);
+      position: relative; overflow: hidden;
+      isolation: isolate;
+      color: var(--ink);
+    }
+    /* Each layer fills the canvas; stacking is enforced by z-index. */
+    .cover > [data-layer] {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+    }
+    .cover > [data-layer="background"] { z-index: 1; }
+    .cover > [data-layer="effects"]    { z-index: 2; pointer-events: none; }
+    .cover > [data-layer="artwork"]    { z-index: 3; }
+
+    /* The background image carrier inside [data-layer="background"]. */
+    .bg-img {
+      position: absolute; inset: 0;
+      background-image: var(--cover-img);
+      background-size: cover;
+      background-position: var(--bg-pos, center);
+      background-repeat: no-repeat;
+    }
+
+    /* ─── Atmospheric effects (live in [data-layer="background"]) ────── */
+    .fx-vignette {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at center,
+        rgba(0,0,0,0) 35%,
+        rgba(0,0,0,0.35) 90%,
+        rgba(0,0,0,0.55) 100%);
+      mix-blend-mode: multiply;
+    }
+    .fx-rim-light {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 60% 50% at 25% 20%,
+        rgba(255,250,235,0.35) 0%,
+        rgba(255,250,235,0) 60%);
+      mix-blend-mode: screen;
+    }
+    .fx-shade-top {
+      position: absolute; top: 0; left: 0; right: 0; height: 28%;
+      background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
+      pointer-events: none;
+    }
+    .fx-shade-bottom {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 30%;
+      background: linear-gradient(0deg, rgba(0,0,0,0.55), rgba(0,0,0,0));
+      pointer-events: none;
+    }
+    /* Color grading — applied to .bg-img only so it doesn't shift text colors. */
+    .cover.fx-grade-warm     .bg-img { filter: saturate(1.12) contrast(1.06) brightness(1.02) sepia(0.08); }
+    .cover.fx-grade-cool     .bg-img { filter: saturate(1.10) contrast(1.05) brightness(0.98) hue-rotate(-8deg); }
+    .cover.fx-grade-cinematic .bg-img { filter: saturate(0.92) contrast(1.18) brightness(0.95); }
+    .cover.fx-grade-acid     .bg-img { filter: saturate(1.4)  contrast(1.15) hue-rotate(8deg); }
+
+    /* ─── Effects layer decorations ───────────────────────────────────── */
+    .fx-sparkle {
+      position: absolute; pointer-events: none;
+      font-family: 'Inter', sans-serif;
+      mix-blend-mode: screen;
+      filter: drop-shadow(0 0 6px rgba(255,255,255,0.5));
+    }
+    /* Lens flare uses a PNG (preferred) or a CSS-only fallback radial glow. */
+    .fx-flare {
+      position: absolute; pointer-events: none;
+      background: radial-gradient(circle,
+        rgba(255,240,210,0.9) 0%,
+        rgba(255,200,140,0.5) 18%,
+        rgba(255,200,140,0) 50%);
+      mix-blend-mode: screen;
+      filter: blur(2px);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Skeleton 1 — BILINGUAL CJK
+       CJK kanji masthead top-left, italic script English title top-right.
+       Coverlines flank the subject. Big script signature centered bottom.
+       ═══════════════════════════════════════════════════════════════════ */
+    .skeleton-bilingual-cjk .s1-cjk {
+      position: absolute; top: calc(var(--ch) * 0.035px);
+      left: calc(var(--ch) * 0.04px);
+      font-family: var(--font-cjk); font-weight: 900;
+      font-size: calc(var(--ch) * 0.058px); line-height: 0.95;
+      color: var(--ink); letter-spacing: 0.08em;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .skeleton-bilingual-cjk .s1-english {
+      position: absolute; top: calc(var(--ch) * 0.02px);
+      right: calc(var(--ch) * 0.04px);
+      font-family: var(--font-display);
+      font-size: calc(var(--ch) * 0.14px); color: var(--ink);
+      line-height: 0.9; letter-spacing: -0.01em; text-align: right;
+    }
+    .skeleton-bilingual-cjk .s1-english-sub {
+      position: absolute; top: calc(var(--ch) * 0.17px);
+      right: calc(var(--ch) * 0.045px);
+      font-family: var(--font-serif); font-style: italic;
+      font-size: calc(var(--ch) * 0.014px); color: var(--ink);
+      letter-spacing: 0.18em; opacity: 0.92;
+    }
+    .skeleton-bilingual-cjk .s1-dateline {
+      position: absolute; top: calc(var(--ch) * 0.195px);
+      left: calc(var(--ch) * 0.04px);
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.011px); line-height: 1.55;
+      color: var(--ink); letter-spacing: 0.18em; opacity: 0.95;
+    }
+    .skeleton-bilingual-cjk .s1-badge {
+      position: absolute; top: calc(var(--ch) * 0.26px);
+      left: calc(var(--ch) * 0.04px);
+      width: calc(var(--ch) * 0.066px); height: calc(var(--ch) * 0.066px);
+      border-radius: 50%; border: 1.5px solid var(--accent);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--accent); text-align: center; padding: 6px;
+    }
+    .skeleton-bilingual-cjk .s1-badge .s { font-size: calc(var(--ch) * 0.018px); line-height: 1; }
+    .skeleton-bilingual-cjk .s1-badge .x { font-family: var(--font-serif); font-style: italic; font-weight: 700;
+                                            font-size: calc(var(--ch) * 0.014px); line-height: 1; margin-top: 3px; }
+    .skeleton-bilingual-cjk .s1-badge .t { font-family: var(--font-smallcaps);
+                                            font-size: calc(var(--ch) * 0.0058px); line-height: 1.2;
+                                            letter-spacing: 0.1em; margin-top: 4px; }
+    .skeleton-bilingual-cjk .s1-vert {
+      position: absolute; top: calc(var(--ch) * 0.34px);
+      left: calc(var(--ch) * 0.046px);
+      writing-mode: vertical-rl; font-family: var(--font-serif); font-style: italic;
+      font-size: calc(var(--ch) * 0.019px); color: var(--accent);
+      letter-spacing: 0.12em;
+    }
+    .skeleton-bilingual-cjk .s1-cl {
+      position: absolute; max-width: calc(var(--cw) * 0.3px);
+    }
+    .skeleton-bilingual-cjk .s1-cl-h {
+      font-family: var(--font-serif); font-style: italic; font-weight: 700;
+      font-size: calc(var(--ch) * 0.027px); line-height: 1.05;
+      color: var(--ink); margin-bottom: 6px;
+    }
+    .skeleton-bilingual-cjk .s1-cl-sub {
+      font-family: var(--font-serif);
+      font-size: calc(var(--ch) * 0.011px); line-height: 1.35;
+      color: var(--ink); opacity: 0.92;
+    }
+    .skeleton-bilingual-cjk .s1-cl-1 { top: calc(var(--ch) * 0.27px); right: calc(var(--ch) * 0.035px); text-align: right; }
+    .skeleton-bilingual-cjk .s1-cl-2 { top: calc(var(--ch) * 0.44px); right: calc(var(--ch) * 0.035px); text-align: right; }
+    .skeleton-bilingual-cjk .s1-cl-3 { bottom: calc(var(--ch) * 0.30px); left: calc(var(--ch) * 0.04px); text-align: left; }
+
+    .skeleton-bilingual-cjk .s1-sig {
+      position: absolute; bottom: calc(var(--ch) * 0.085px);
+      left: 50%; transform: translateX(-50%); text-align: center;
+    }
+    .skeleton-bilingual-cjk .s1-sig-name {
+      font-family: var(--font-script);
+      font-size: calc(var(--ch) * 0.15px); line-height: 0.85;
+      color: var(--ink); text-shadow: 0 6px 24px rgba(0,0,0,0.4);
+    }
+    .skeleton-bilingual-cjk .s1-sig-sub {
+      font-family: var(--font-serif); font-style: italic;
+      font-size: calc(var(--ch) * 0.016px); letter-spacing: 0.22em;
+      color: var(--ink); margin-top: 12px; opacity: 0.95;
+    }
+
+    /* Landscape orientation rules for skeleton 1 */
+    .skeleton-bilingual-cjk.landscape .s1-cjk {
+      writing-mode: vertical-rl;
+      top: calc(var(--ch) * 0.06px); left: calc(var(--cw) * 0.022px);
+      font-size: calc(var(--cw) * 0.045px);
+    }
+    .skeleton-bilingual-cjk.landscape .s1-english {
+      top: calc(var(--ch) * 0.03px);
+      right: calc(var(--cw) * 0.04px);
+      font-size: calc(var(--cw) * 0.11px);
+    }
+    .skeleton-bilingual-cjk.landscape .s1-english-sub {
+      top: calc(var(--ch) * 0.18px); right: calc(var(--cw) * 0.05px);
+    }
+    .skeleton-bilingual-cjk.landscape .s1-dateline,
+    .skeleton-bilingual-cjk.landscape .s1-badge,
+    .skeleton-bilingual-cjk.landscape .s1-vert { display: none; }
+    .skeleton-bilingual-cjk.landscape .s1-cl { max-width: calc(var(--cw) * 0.28px); }
+    .skeleton-bilingual-cjk.landscape .s1-cl-1 { top: calc(var(--ch) * 0.28px); right: calc(var(--cw) * 0.04px); }
+    .skeleton-bilingual-cjk.landscape .s1-cl-2 { top: calc(var(--ch) * 0.5px); right: calc(var(--cw) * 0.04px); }
+    .skeleton-bilingual-cjk.landscape .s1-cl-3 { bottom: calc(var(--ch) * 0.1px); left: calc(var(--cw) * 0.1px); }
+    .skeleton-bilingual-cjk.landscape .s1-sig {
+      bottom: calc(var(--ch) * 0.08px); left: auto; right: calc(var(--cw) * 0.04px);
+      transform: none; text-align: right;
+    }
+    .skeleton-bilingual-cjk.landscape .s1-sig-name { font-size: calc(var(--cw) * 0.09px); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Skeleton 2 — EDITORIAL DIDONE
+       Single huge Didone masthead. Sparse, confident coverlines.
+       Rule + dateline under masthead. Most Vogue-adjacent.
+       ═══════════════════════════════════════════════════════════════════ */
+    .skeleton-didone .s2-masthead {
+      position: absolute; top: calc(var(--ch) * 0.03px);
+      left: 0; right: 0; text-align: center;
+      font-family: var(--font-hero); font-weight: 900;
+      font-size: calc(var(--ch) * 0.17px); color: var(--ink);
+      letter-spacing: 0.01em; line-height: 1;
+    }
+    .skeleton-didone .s2-rule {
+      position: absolute; top: calc(var(--ch) * 0.21px);
+      left: calc(var(--cw) * 0.065px); right: calc(var(--cw) * 0.065px);
+      height: 1px; background: var(--ink); opacity: 0.85;
+    }
+    .skeleton-didone .s2-dateline {
+      position: absolute; top: calc(var(--ch) * 0.215px);
+      left: 0; right: 0; text-align: center;
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.012px);
+      color: var(--ink); letter-spacing: 0.5em; opacity: 0.9;
+    }
+    .skeleton-didone .s2-hero {
+      position: absolute; left: calc(var(--cw) * 0.065px);
+      bottom: calc(var(--ch) * 0.22px);
+      max-width: calc(var(--cw) * 0.48px);
+    }
+    .skeleton-didone .s2-hero-h {
+      font-family: var(--font-hero); font-style: italic; font-weight: 700;
+      font-size: calc(var(--ch) * 0.053px); line-height: 0.95;
+      color: var(--ink);
+      text-shadow: 0 4px 24px rgba(0,0,0,0.35);
+    }
+    .skeleton-didone .s2-hero-sub {
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.012px);
+      letter-spacing: 0.32em; color: var(--accent);
+      margin-top: 18px;
+    }
+    .skeleton-didone .s2-cl {
+      position: absolute; max-width: calc(var(--cw) * 0.27px);
+    }
+    .skeleton-didone .s2-cl-h {
+      font-family: var(--font-hero); font-weight: 700;
+      font-size: calc(var(--ch) * 0.021px); line-height: 1.05;
+      color: var(--ink);
+    }
+    .skeleton-didone .s2-cl-sub {
+      font-family: var(--font-serif); font-style: italic;
+      font-size: calc(var(--ch) * 0.011px); line-height: 1.4;
+      color: var(--ink); opacity: 0.92; margin-top: 6px;
+    }
+    .skeleton-didone .s2-cl-1 {
+      top: calc(var(--ch) * 0.28px); right: calc(var(--cw) * 0.065px);
+      text-align: right;
+    }
+    .skeleton-didone .s2-cl-2 {
+      bottom: calc(var(--ch) * 0.12px); right: calc(var(--cw) * 0.065px);
+      text-align: right;
+    }
+    .skeleton-didone .s2-issue {
+      position: absolute; bottom: calc(var(--ch) * 0.036px);
+      right: calc(var(--cw) * 0.065px);
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.01px);
+      letter-spacing: 0.42em; color: var(--ink); opacity: 0.85;
+    }
+    .skeleton-didone .s2-barcode {
+      position: absolute; bottom: calc(var(--ch) * 0.036px);
+      left: calc(var(--cw) * 0.065px); display: flex; gap: 2px;
+      height: calc(var(--ch) * 0.03px);
+    }
+    .skeleton-didone .s2-barcode span { display: block; background: var(--ink); opacity: 0.9; }
+
+    /* Landscape rules for skeleton 2 */
+    .skeleton-didone.landscape .s2-masthead {
+      font-size: calc(var(--cw) * 0.105px);
+      top: calc(var(--ch) * 0.05px);
+    }
+    .skeleton-didone.landscape .s2-rule {
+      top: calc(var(--ch) * 0.25px);
+    }
+    .skeleton-didone.landscape .s2-dateline {
+      top: calc(var(--ch) * 0.26px);
+      font-size: calc(var(--cw) * 0.011px);
+    }
+    .skeleton-didone.landscape .s2-hero {
+      bottom: calc(var(--ch) * 0.12px); left: calc(var(--cw) * 0.04px);
+      max-width: calc(var(--cw) * 0.4px);
+    }
+    .skeleton-didone.landscape .s2-hero-h { font-size: calc(var(--cw) * 0.04px); }
+    .skeleton-didone.landscape .s2-cl-1 { top: calc(var(--ch) * 0.35px); }
+    .skeleton-didone.landscape .s2-cl-2 { bottom: calc(var(--ch) * 0.1px); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Skeleton 3 — ASIAN GLOSSY
+       Italic display masthead with paper-shadow + CJK sub-masthead.
+       Multiple colored coverlines, sparkles, gold price badge.
+       ═══════════════════════════════════════════════════════════════════ */
+    .skeleton-asian-glossy {
+      --pink:   #ff6fa8;
+      --teal:   #46c5b7;
+      --gold:   #e8b43a;
+    }
+    .skeleton-asian-glossy .s3-masthead {
+      position: absolute; top: calc(var(--ch) * 0.03px);
+      left: calc(var(--cw) * 0.065px);
+      font-family: var(--font-hero); font-weight: 900; font-style: italic;
+      font-size: calc(var(--ch) * 0.11px); color: var(--pink);
+      line-height: 0.85;
+      text-shadow: 6px 6px 0 var(--paper), 10px 10px 0 var(--gold);
+    }
+    .skeleton-asian-glossy .s3-sub-cjk {
+      position: absolute; top: calc(var(--ch) * 0.15px);
+      left: calc(var(--cw) * 0.073px);
+      font-family: var(--font-cjk); font-weight: 700;
+      font-size: calc(var(--ch) * 0.02px);
+      color: var(--ink); letter-spacing: 0.18em;
+    }
+    .skeleton-asian-glossy .s3-sub-romaji {
+      position: absolute; top: calc(var(--ch) * 0.177px);
+      left: calc(var(--cw) * 0.074px);
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.01px);
+      letter-spacing: 0.42em; color: var(--pink);
+    }
+    .skeleton-asian-glossy .s3-issue {
+      position: absolute; top: calc(var(--ch) * 0.036px);
+      right: calc(var(--cw) * 0.065px);
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.01px); line-height: 1.7;
+      letter-spacing: 0.18em; color: var(--ink); text-align: right;
+    }
+    .skeleton-asian-glossy .s3-price-badge {
+      position: absolute; top: calc(var(--ch) * 0.12px);
+      right: calc(var(--cw) * 0.065px);
+      width: calc(var(--ch) * 0.08px); height: calc(var(--ch) * 0.08px);
+      border-radius: 50%; background: var(--gold);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--ink); transform: rotate(-8deg);
+      box-shadow: 0 8px 0 rgba(0,0,0,0.12);
+    }
+    .skeleton-asian-glossy .s3-price-badge .v {
+      font-family: var(--font-hero); font-weight: 900; font-style: italic;
+      font-size: calc(var(--ch) * 0.02px); line-height: 1;
+    }
+    .skeleton-asian-glossy .s3-price-badge .t {
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.006px); letter-spacing: 0.22em; margin-top: 4px;
+    }
+    .skeleton-asian-glossy .s3-cl { position: absolute; }
+    .skeleton-asian-glossy .s3-cl-h {
+      font-family: var(--font-hero); font-style: italic; font-weight: 700;
+      font-size: calc(var(--ch) * 0.034px); line-height: 1;
+    }
+    .skeleton-asian-glossy .s3-cl-sub {
+      font-family: var(--font-serif);
+      font-size: calc(var(--ch) * 0.011px); line-height: 1.4;
+      margin-top: 6px; max-width: calc(var(--cw) * 0.22px);
+    }
+    .skeleton-asian-glossy .s3-cl-1 { top: calc(var(--ch) * 0.28px); left: calc(var(--cw) * 0.05px); color: var(--pink); }
+    .skeleton-asian-glossy .s3-cl-1 .s3-cl-sub { color: var(--ink); }
+    .skeleton-asian-glossy .s3-cl-2 { top: calc(var(--ch) * 0.46px); left: calc(var(--cw) * 0.05px); color: var(--teal); }
+    .skeleton-asian-glossy .s3-cl-2 .s3-cl-sub { color: var(--ink); }
+    .skeleton-asian-glossy .s3-cl-3 { top: calc(var(--ch) * 0.28px); right: calc(var(--cw) * 0.05px); text-align: right; color: var(--gold); }
+    .skeleton-asian-glossy .s3-cl-3 .s3-cl-sub { color: var(--ink); margin-left: auto; }
+    .skeleton-asian-glossy .s3-cl-4 { top: calc(var(--ch) * 0.44px); right: calc(var(--cw) * 0.05px); text-align: right; color: var(--pink); }
+    .skeleton-asian-glossy .s3-cl-4 .s3-cl-sub { color: var(--ink); margin-left: auto; }
+    .skeleton-asian-glossy .s3-name {
+      position: absolute; bottom: calc(var(--ch) * 0.12px);
+      left: 50%; transform: translateX(-50%);
+      font-family: 'Pinyon Script', cursive;
+      font-size: calc(var(--ch) * 0.11px);
+      color: var(--pink); line-height: 0.85;
+      text-shadow: 4px 4px 0 var(--paper);
+    }
+    .skeleton-asian-glossy .s3-tagline {
+      position: absolute; bottom: calc(var(--ch) * 0.08px);
+      left: 0; right: 0; text-align: center;
+      font-family: var(--font-serif); font-style: italic;
+      font-size: calc(var(--ch) * 0.013px);
+      letter-spacing: 0.28em; color: var(--ink);
+    }
+    .skeleton-asian-glossy .s3-barcode {
+      position: absolute; bottom: calc(var(--ch) * 0.03px);
+      left: calc(var(--cw) * 0.05px); display: flex; gap: 1.5px;
+      height: calc(var(--ch) * 0.025px);
+    }
+    .skeleton-asian-glossy .s3-barcode span { display: block; background: var(--ink); }
+
+    .skeleton-asian-glossy.landscape .s3-masthead { font-size: calc(var(--cw) * 0.08px); }
+    .skeleton-asian-glossy.landscape .s3-cl-2 { top: calc(var(--ch) * 0.6px); }
+    .skeleton-asian-glossy.landscape .s3-cl-4 { top: calc(var(--ch) * 0.58px); }
+    .skeleton-asian-glossy.landscape .s3-name { font-size: calc(var(--cw) * 0.07px); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Skeleton 4 — BRUTALIST (i-D / Dazed)
+       Heavy Anton block top-left, single accent rule, lowercase italic
+       coverlines, ANTON name + small italic tag bottom.
+       ═══════════════════════════════════════════════════════════════════ */
+    .skeleton-brutalist {
+      --accent: #ff3a2d; /* default red — override per character */
+    }
+    .skeleton-brutalist .s4-block {
+      position: absolute; top: calc(var(--ch) * 0.036px);
+      left: calc(var(--cw) * 0.048px);
+      background: var(--accent); color: #fff;
+      padding: 16px 24px 20px;
+      font-family: var(--font-sans-display);
+      font-size: calc(var(--ch) * 0.12px); line-height: 0.78;
+      letter-spacing: -0.04em; text-transform: lowercase;
+    }
+    .skeleton-brutalist .s4-issue-stack {
+      position: absolute; top: calc(var(--ch) * 0.042px);
+      right: calc(var(--cw) * 0.048px);
+      font-family: var(--font-sans-display);
+      font-size: calc(var(--ch) * 0.014px); letter-spacing: 0.18em;
+      color: var(--ink); line-height: 1.6;
+      text-align: right; text-transform: uppercase;
+    }
+    .skeleton-brutalist .s4-rule {
+      position: absolute; top: calc(var(--ch) * 0.218px);
+      left: 0; right: 0; height: 4px; background: var(--accent);
+    }
+    .skeleton-brutalist .s4-rule-label {
+      position: absolute; top: calc(var(--ch) * 0.225px);
+      left: calc(var(--cw) * 0.048px);
+      font-family: var(--font-sans-display);
+      font-size: calc(var(--ch) * 0.011px);
+      letter-spacing: 0.32em; color: var(--accent);
+      text-transform: uppercase;
+    }
+    .skeleton-brutalist .s4-coverlines {
+      position: absolute; bottom: calc(var(--ch) * 0.17px);
+      left: calc(var(--cw) * 0.048px);
+      display: flex; flex-direction: column;
+      gap: calc(var(--ch) * 0.018px); max-width: calc(var(--cw) * 0.5px);
+    }
+    .skeleton-brutalist .s4-cl {
+      font-family: var(--font-serif); font-style: italic;
+      font-size: calc(var(--ch) * 0.025px); line-height: 1.05;
+      color: var(--ink); text-transform: lowercase;
+    }
+    .skeleton-brutalist .s4-cl .tag {
+      font-family: var(--font-sans-display); font-style: normal;
+      font-size: calc(var(--ch) * 0.009px); letter-spacing: 0.32em;
+      display: block; margin-top: 4px; color: var(--accent);
+      text-transform: uppercase;
+    }
+    .skeleton-brutalist .s4-name {
+      position: absolute; bottom: calc(var(--ch) * 0.042px);
+      left: calc(var(--cw) * 0.048px);
+      font-family: var(--font-sans-display);
+      font-size: calc(var(--ch) * 0.058px);
+      letter-spacing: -0.02em; line-height: 0.9;
+      color: var(--ink); text-transform: uppercase;
+    }
+    .skeleton-brutalist .s4-name-x {
+      font-family: var(--font-serif); font-style: italic;
+      font-weight: 400; color: var(--accent);
+      text-transform: lowercase;
+    }
+    .skeleton-brutalist .s4-barcode {
+      position: absolute; bottom: calc(var(--ch) * 0.048px);
+      right: calc(var(--cw) * 0.048px);
+      display: flex; gap: 2px; height: calc(var(--ch) * 0.036px);
+    }
+    .skeleton-brutalist .s4-barcode span { display: block; background: var(--ink); }
+
+    .skeleton-brutalist.landscape .s4-block {
+      font-size: calc(var(--cw) * 0.075px);
+    }
+    .skeleton-brutalist.landscape .s4-coverlines {
+      bottom: calc(var(--ch) * 0.12px);
+    }
+    .skeleton-brutalist.landscape .s4-name {
+      font-size: calc(var(--cw) * 0.04px);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Skeleton 5 — VERTICAL MASTHEAD (landscape-first)
+       Anton/CJK masthead set vertical on the LEFT edge. Subject fills right.
+       Coverlines stack down right edge. Designed for landscape inputs.
+       ═══════════════════════════════════════════════════════════════════ */
+    .skeleton-vertical .s5-vmast {
+      position: absolute; top: calc(var(--ch) * 0.05px);
+      left: calc(var(--cw) * 0.025px);
+      writing-mode: vertical-rl;
+      font-family: var(--font-sans-display);
+      font-size: calc(var(--ch) * 0.085px); line-height: 0.92;
+      letter-spacing: -0.02em; color: var(--ink);
+      text-transform: uppercase;
+    }
+    .skeleton-vertical .s5-vmast-sub {
+      position: absolute; top: calc(var(--ch) * 0.06px);
+      left: calc(var(--cw) * 0.075px);
+      writing-mode: vertical-rl;
+      font-family: var(--font-serif); font-style: italic;
+      font-size: calc(var(--ch) * 0.018px);
+      letter-spacing: 0.28em; color: var(--accent);
+    }
+    .skeleton-vertical .s5-issue {
+      position: absolute; top: calc(var(--ch) * 0.04px);
+      right: calc(var(--cw) * 0.05px);
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.013px);
+      letter-spacing: 0.4em; color: var(--ink); text-align: right;
+    }
+    .skeleton-vertical .s5-cl {
+      position: absolute; right: calc(var(--cw) * 0.05px);
+      max-width: calc(var(--cw) * 0.32px);
+    }
+    .skeleton-vertical .s5-cl-h {
+      font-family: var(--font-serif); font-style: italic; font-weight: 700;
+      font-size: calc(var(--ch) * 0.035px); line-height: 1.0;
+      color: var(--ink); text-align: right;
+    }
+    .skeleton-vertical .s5-cl-sub {
+      font-family: var(--font-serif);
+      font-size: calc(var(--ch) * 0.012px); line-height: 1.4;
+      color: var(--ink); opacity: 0.92;
+      margin-top: 6px; text-align: right;
+    }
+    .skeleton-vertical .s5-cl-1 { top: calc(var(--ch) * 0.22px); }
+    .skeleton-vertical .s5-cl-2 { top: calc(var(--ch) * 0.46px); }
+    .skeleton-vertical .s5-name {
+      position: absolute; bottom: calc(var(--ch) * 0.06px);
+      right: calc(var(--cw) * 0.05px);
+      font-family: var(--font-script);
+      font-size: calc(var(--ch) * 0.11px); line-height: 0.85;
+      color: var(--ink); text-align: right;
+      text-shadow: 0 6px 24px rgba(0,0,0,0.4);
+    }
+    .skeleton-vertical .s5-barcode {
+      position: absolute; bottom: calc(var(--ch) * 0.04px);
+      left: calc(var(--cw) * 0.05px);
+      display: flex; gap: 2px; height: calc(var(--ch) * 0.04px);
+    }
+    .skeleton-vertical .s5-barcode span { display: block; background: var(--ink); }
+
+    /* Portrait fallback for vertical skeleton */
+    .skeleton-vertical.portrait .s5-vmast {
+      writing-mode: horizontal-tb;
+      top: calc(var(--ch) * 0.03px); left: calc(var(--cw) * 0.05px);
+      font-size: calc(var(--ch) * 0.085px);
+    }
+    .skeleton-vertical.portrait .s5-vmast-sub {
+      writing-mode: horizontal-tb;
+      top: calc(var(--ch) * 0.13px); left: calc(var(--cw) * 0.05px);
+    }
+  </style>
+</head>
+<body>
+
+  <!--
+    EXAMPLES BELOW — each .cover is a worked sample showing one skeleton with
+    placeholder content. Real usage: copy a .cover, set inline CSS variables
+    for tokens + background image, fill in the text content.
+  -->
+
+  <!-- Skeleton 1 — Bilingual Character-Mag -->
+  <div class="cover skeleton-bilingual-cjk fx-grade-warm" id="cover-a" style="
+        --cw: 1151; --ch: 1400;
+        --cover-img: url('illya.png');
+        --ink: #fff; --accent: #c41e3a; --paper: #fff5fb;
+        --font-display: 'Italianno', cursive;
+        --font-cjk: 'Noto Serif SC', serif;
+        --font-serif: 'Cormorant Garamond', serif;
+        --font-smallcaps: 'Marcellus SC', serif;
+        --font-script: 'Italianno', cursive;">
+    <div class="cover-id">A — Bilingual Character-Mag</div>
+    <div data-layer="background">
+      <div class="bg-img"></div>
+      <div class="fx-vignette"></div>
+      <div class="fx-rim-light"></div>
+      <div class="fx-shade-top"></div>
+      <div class="fx-shade-bottom"></div>
+    </div>
+    <div data-layer="effects">
+      <div class="fx-sparkle" style="top: 8%; right: 18%; font-size: 28px; color: #fff;">✦</div>
+      <div class="fx-sparkle" style="top: 14%; left: 72%; font-size: 22px; color: #c41e3a;">♡</div>
+    </div>
+    <div data-layer="artwork">
+      <div class="s1-cjk"><span>婚纱</span><span>魔法少女</span></div>
+      <div class="s1-english">Prisma Illya</div>
+      <div class="s1-english-sub">the bridal issue</div>
+      <div class="s1-dateline">May 24, 2026<br>Special issue of Einzbern</div>
+      <div class="s1-badge"><div class="s">✦</div><div class="x">x777</div><div class="t">Class card bridal couture crystal veil</div></div>
+      <div class="s1-vert">Special Bridal Issue</div>
+      <div class="s1-cl s1-cl-1"><div class="s1-cl-h">Fuyuki's bridal idol in the new era</div><div class="s1-cl-sub">The white veil and rose crown debut on the cover</div></div>
+      <div class="s1-cl s1-cl-2"><div class="s1-cl-h">High-end lace at the Einzbern estate</div><div class="s1-cl-sub">Illya von Einzbern's handmade bridal look revealed</div></div>
+      <div class="s1-cl s1-cl-3"><div class="s1-cl-h">latest fashion · Veil · Lace · sweet love</div><div class="s1-cl-sub">Fuyuki is the city you absolutely don't want to miss</div></div>
+      <div class="s1-sig"><div class="s1-sig-name">Illya</div><div class="s1-sig-sub">Special guest from Einzbern</div></div>
+    </div>
+  </div>
+
+  <!-- Skeleton 2 — Editorial Didone -->
+  <div class="cover skeleton-didone fx-grade-warm" id="cover-b" style="
+        --cw: 1151; --ch: 1400;
+        --cover-img: url('illya.png');
+        --ink: #fff; --accent: #c41e3a;
+        --font-hero: 'Bodoni Moda', serif;
+        --font-serif: 'Cormorant Garamond', serif;
+        --font-smallcaps: 'Marcellus SC', serif;">
+    <div class="cover-id">B — Editorial Didone</div>
+    <div data-layer="background">
+      <div class="bg-img"></div>
+      <div class="fx-vignette"></div>
+      <div class="fx-shade-top"></div>
+      <div class="fx-shade-bottom"></div>
+    </div>
+    <div data-layer="effects"></div>
+    <div data-layer="artwork">
+      <div class="s2-masthead">ILLYA</div>
+      <div class="s2-rule"></div>
+      <div class="s2-dateline">MAY 2026 · NO. 07 · ¥980</div>
+      <div class="s2-hero">
+        <div class="s2-hero-h">The Bridal Issue</div>
+        <div class="s2-hero-sub">ON THE COVER · ILIYA VON EINZBERN</div>
+      </div>
+      <div class="s2-cl s2-cl-1"><div class="s2-cl-h">White Veil</div><div class="s2-cl-sub">How Fuyuki is rewriting wedding couture for the magical-girl era.</div></div>
+      <div class="s2-cl s2-cl-2"><div class="s2-cl-h">Inside the Kaleid</div><div class="s2-cl-sub">A portrait at the Einzbern estate, photographed in rose and lace.</div></div>
+      <div class="s2-issue">VOL VII · MMXXVI</div>
+      <div class="s2-barcode">
+        <span style="width:3px"></span><span style="width:1.5px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skeleton 3 — Asian Fashion Glossy -->
+  <div class="cover skeleton-asian-glossy fx-grade-warm" id="cover-c" style="
+        --cw: 1151; --ch: 1400;
+        --cover-img: url('illya.png');
+        --ink: #ffffff; --paper: #fff5fb;
+        --pink: #ff4d8a; --teal: #ffb3c6; --gold: #c41e3a;
+        --font-hero: 'Playfair Display', serif;
+        --font-cjk: 'Noto Serif SC', serif;
+        --font-serif: 'Cormorant Garamond', serif;
+        --font-smallcaps: 'Marcellus SC', serif;">
+    <div class="cover-id">C — Asian Fashion Glossy</div>
+    <div data-layer="background">
+      <div class="bg-img"></div>
+      <div class="fx-vignette"></div>
+      <div class="fx-rim-light"></div>
+      <div class="fx-shade-bottom"></div>
+    </div>
+    <div data-layer="effects">
+      <div class="fx-sparkle" style="top: 10%; left: 55%; font-size: 32px; color: #ffffff;">✦</div>
+      <div class="fx-sparkle" style="top: 18%; right: 12%; font-size: 28px; color: #ff4d8a;">♡</div>
+      <div class="fx-sparkle" style="top: 6%; left: 28%; font-size: 22px; color: #c41e3a;">★</div>
+    </div>
+    <div data-layer="artwork">
+      <div class="s3-masthead">Illya</div>
+      <div class="s3-sub-cjk">魔法少女イリヤ 季刊</div>
+      <div class="s3-sub-romaji">PRISMA ILLYA QUARTERLY</div>
+      <div class="s3-issue">May 2026<br>Issue 077<br>¥980 / $14</div>
+      <div class="s3-price-badge"><div class="v">¥980</div><div class="t">BRIDAL</div></div>
+      <div class="s3-cl s3-cl-1"><div class="s3-cl-h">今月のウェディング!</div><div class="s3-cl-sub">Bridal lace & rose crown — the look every magical girl wants</div></div>
+      <div class="s3-cl s3-cl-2"><div class="s3-cl-h">Veil Makeup Tutorial</div><div class="s3-cl-sub">Get the Einzbern glow — 5 looks with crimson rose accents</div></div>
+      <div class="s3-cl s3-cl-3"><div class="s3-cl-h">New color · LIP</div><div class="s3-cl-sub">5 shades inspired by Fuyuki cherry blossoms</div></div>
+      <div class="s3-cl s3-cl-4"><div class="s3-cl-h">30-day lace reset</div><div class="s3-cl-sub">Stockings, gloves & veil care from the Kaleid liner</div></div>
+      <div class="s3-name">Illya</div>
+      <div class="s3-tagline">SPECIAL · BRIDAL · COVER</div>
+      <div class="s3-barcode">
+        <span style="width:2.5px"></span><span style="width:1px"></span><span style="width:1.5px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:1.5px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span><span style="width:1px"></span><span style="width:2px"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skeleton 4 — Brutalist (i-D / Dazed) -->
+  <div class="cover skeleton-brutalist fx-grade-warm" id="cover-d" style="
+        --cw: 1151; --ch: 1400;
+        --cover-img: url('illya.png');
+        --ink: #fff; --accent: #c41e3a;
+        --font-sans-display: 'Anton', sans-serif;
+        --font-serif: 'Cormorant Garamond', serif;">
+    <div class="cover-id">D — Brutalist</div>
+    <div data-layer="background">
+      <div class="bg-img"></div>
+      <div class="fx-vignette"></div>
+      <div class="fx-shade-bottom"></div>
+    </div>
+    <div data-layer="effects"></div>
+    <div data-layer="artwork">
+      <div class="s4-block">illya</div>
+      <div class="s4-issue-stack">ISS. 07<br>MAY 26<br>¥980</div>
+      <div class="s4-rule"></div>
+      <div class="s4-rule-label">THE BRIDAL ISSUE</div>
+      <div class="s4-coverlines">
+        <div class="s4-cl">the rose veil<span class="tag">COVER · PG 24</span></div>
+        <div class="s4-cl">a portrait in pink<span class="tag">INTERVIEW · PG 60</span></div>
+        <div class="s4-cl">einzbern, ungoverned<span class="tag">FASHION · PG 88</span></div>
+      </div>
+      <div class="s4-name">ILLYA<span class="s4-name-x"> × bridal issue</span></div>
+      <div class="s4-barcode">
+        <span style="width:3px"></span><span style="width:1.5px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span><span style="width:1px"></span><span style="width:2px"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skeleton 5 — Vertical Masthead (landscape-first) -->
+  <div class="cover skeleton-vertical fx-grade-warm" id="cover-e" style="
+        --cw: 1151; --ch: 1400;
+        --cover-img: url('illya.png');
+        --ink: #fff; --accent: #c41e3a;
+        --font-sans-display: 'Anton', sans-serif;
+        --font-serif: 'Cormorant Garamond', serif;
+        --font-script: 'Italianno', cursive;
+        --font-smallcaps: 'Marcellus SC', serif;">
+    <div class="cover-id">E — Vertical Masthead (landscape-first)</div>
+    <div data-layer="background">
+      <div class="bg-img"></div>
+      <div class="fx-vignette"></div>
+      <div class="fx-shade-bottom"></div>
+    </div>
+    <div data-layer="effects"></div>
+    <div data-layer="artwork">
+      <div class="s5-vmast">PRISMA</div>
+      <div class="s5-vmast-sub">the bridal issue · spring 2026</div>
+      <div class="s5-issue">VOL VII · MAY 2026 · ¥980</div>
+      <div class="s5-cl s5-cl-1"><div class="s5-cl-h">White Veil</div><div class="s5-cl-sub">How Fuyuki is rewriting wedding couture</div></div>
+      <div class="s5-cl s5-cl-2"><div class="s5-cl-h">A Portrait in Rose</div><div class="s5-cl-sub">Photographed at the Einzbern estate</div></div>
+      <div class="s5-name">Illya</div>
+      <div class="s5-barcode">
+        <span style="width:3px"></span><span style="width:1.5px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:1px"></span>
+      </div>
+    </div>
+  </div>
+
+  <!--
+    Auto-apply orientation class from --cw / --ch.
+    Runs after page load so the CSS branches (.landscape / .portrait / .square)
+    take effect before screenshots.
+  -->
+  <script>
+    (function applyOrientations() {
+      document.querySelectorAll('.cover').forEach(function (el) {
+        var cs = getComputedStyle(el);
+        var cw = parseFloat(cs.getPropertyValue('--cw')) || el.offsetWidth;
+        var ch = parseFloat(cs.getPropertyValue('--ch')) || el.offsetHeight;
+        var ratio = cw / ch;
+        el.classList.remove('landscape', 'portrait', 'square');
+        if (Math.abs(ratio - 1) < 0.05) el.classList.add('square');
+        else if (ratio > 1) el.classList.add('landscape');
+        else el.classList.add('portrait');
+      });
+    })();
+  </script>
+</body>
+</html>

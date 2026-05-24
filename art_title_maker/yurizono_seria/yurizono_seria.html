@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>百合園セイア</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Noto+Serif+JP:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      font-family: 'Zen Maru Gothic', sans-serif;
+    }
+
+    .card {
+      position: relative;
+      width: 520px;
+      height: 780px;
+      overflow: hidden;
+      border-radius: 18px;
+      box-shadow: 0 0 60px #ff69b4aa, 0 0 120px #ff69b455;
+    }
+
+    /* Background image */
+    .bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('95ff979690f80a18193633fad43d76eb.png');
+      background-size: cover;
+      background-position: center;
+    }
+
+    /* Subtle inner vignette */
+    .bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(200,30,90,0.25) 100%);
+    }
+
+    /* Decorative sparkle layer */
+    .sparkles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .sparkle {
+      position: absolute;
+      color: #fff;
+      opacity: 0.7;
+      animation: twinkle var(--dur, 2.5s) ease-in-out infinite;
+      animation-delay: var(--delay, 0s);
+      font-size: var(--size, 14px);
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.15; transform: scale(0.8) rotate(0deg); }
+      50%       { opacity: 0.9;  transform: scale(1.2) rotate(20deg); }
+    }
+
+    /* Character image */
+    .character {
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 72%;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.35));
+      z-index: 2;
+    }
+
+    /* Header title block */
+    .title-block {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 3;
+      padding: 28px 32px 20px;
+      background: linear-gradient(180deg, rgba(255,100,150,0.55) 0%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Top decorative line */
+    .deco-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .deco-line span {
+      display: block;
+      height: 1.5px;
+      width: 60px;
+      background: linear-gradient(90deg, transparent, #fff, transparent);
+      border-radius: 2px;
+    }
+
+    .deco-line .diamond {
+      width: 8px;
+      height: 8px;
+      background: #fff;
+      transform: rotate(45deg);
+      box-shadow: 0 0 6px #fff;
+    }
+
+    /* Japanese kanji title */
+    .title-ja {
+      font-family: 'Noto Serif JP', serif;
+      font-weight: 900;
+      font-size: 2.6rem;
+      letter-spacing: 0.15em;
+      color: #fff;
+      text-shadow:
+        0 0 12px rgba(255,255,255,0.9),
+        0 0 28px rgba(255,130,180,0.8),
+        2px 2px 0px rgba(180,0,80,0.4);
+      position: relative;
+    }
+
+    /* Furigana row */
+    .title-furigana {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 500;
+      font-size: 0.82rem;
+      letter-spacing: 0.35em;
+      color: rgba(255,255,255,0.85);
+      text-shadow: 0 0 8px rgba(255,180,210,0.7);
+    }
+
+    /* English name */
+    .title-en {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+      margin-top: 2px;
+      text-shadow: 0 0 10px rgba(255,150,200,0.6);
+    }
+
+    /* Bottom footer band */
+    .footer-band {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 3;
+      height: 54px;
+      background: linear-gradient(0deg, rgba(220,50,100,0.55) 0%, transparent 100%);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 10px;
+    }
+
+    .footer-band .subtitle {
+      font-size: 0.72rem;
+      letter-spacing: 0.45em;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+    }
+
+    /* Corner ornaments */
+    .corner {
+      position: absolute;
+      z-index: 4;
+      width: 36px;
+      height: 36px;
+      opacity: 0.55;
+    }
+    .corner svg { width: 100%; height: 100%; }
+    .corner.tl { top: 10px; left: 10px; }
+    .corner.tr { top: 10px; right: 10px; transform: scaleX(-1); }
+    .corner.bl { bottom: 10px; left: 10px; transform: scaleY(-1); }
+    .corner.br { bottom: 10px; right: 10px; transform: scale(-1); }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="bg"></div>
+
+  <!-- Sparkles -->
+  <div class="sparkles">
+    <div class="sparkle" style="top:12%;left:8%;--size:18px;--dur:2.2s;--delay:0s">✦</div>
+    <div class="sparkle" style="top:20%;left:85%;--size:12px;--dur:3s;--delay:0.4s">✦</div>
+    <div class="sparkle" style="top:38%;left:6%;--size:10px;--dur:2.7s;--delay:0.8s">✧</div>
+    <div class="sparkle" style="top:45%;left:90%;--size:16px;--dur:2.1s;--delay:0.2s">✦</div>
+    <div class="sparkle" style="top:62%;left:12%;--size:14px;--dur:3.2s;--delay:1.1s">✧</div>
+    <div class="sparkle" style="top:72%;left:82%;--size:11px;--dur:2.5s;--delay:0.6s">✦</div>
+    <div class="sparkle" style="top:85%;left:20%;--size:9px;--dur:2.9s;--delay:1.4s">✦</div>
+    <div class="sparkle" style="top:30%;left:50%;--size:8px;--dur:2s;--delay:0.9s">✧</div>
+    <div class="sparkle" style="top:55%;left:70%;--size:13px;--dur:3.5s;--delay:0.3s">✦</div>
+  </div>
+
+  <!-- Title block -->
+  <div class="title-block">
+    <div class="deco-line">
+      <span></span>
+      <div class="diamond"></div>
+      <span></span>
+    </div>
+    <div class="title-furigana">ゆりぞの</div>
+    <div class="title-ja">百合園</div>
+    <div class="title-furigana" style="letter-spacing:0.5em;margin-top:2px;">セイア</div>
+    <div class="title-en">Yurizono Seria</div>
+    <div class="deco-line" style="margin-top:8px;">
+      <span></span>
+      <div class="diamond"></div>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- Character -->
+  <img class="character" src="image.png" alt="百合園セイア">
+
+  <!-- Corner ornaments -->
+  <div class="corner tl">
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 34 L2 2 L34 2" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="2" cy="2" r="3" fill="white"/>
+    </svg>
+  </div>
+  <div class="corner tr">
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 34 L2 2 L34 2" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="2" cy="2" r="3" fill="white"/>
+    </svg>
+  </div>
+  <div class="corner bl">
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 34 L2 2 L34 2" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="2" cy="2" r="3" fill="white"/>
+    </svg>
+  </div>
+  <div class="corner br">
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 34 L2 2 L34 2" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="2" cy="2" r="3" fill="white"/>
+    </svg>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-band">
+    <div class="subtitle">Blue Archive &nbsp;·&nbsp; ブルーアーカイブ</div>
+  </div>
+</div>
+
+</body>
+</html>

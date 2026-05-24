@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nozomi & Hikari - Decorated Cute Collection</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Chewy&family=Fredoka+One&family=Pacifico&family=Press+Start+2P&family=Titan+One&family=Varela+Round&display=swap');
+</style>
+
+<style>
+  :root {
+    /* 核心背景：提取的蓝色 */
+    --bg-blue: #2f96eb; 
+    --page-bg: #eef6fc;
+
+    /* --- 绿色系 (高亮可爱) --- */
+    --green-mint: #b9f6ca;   /* 薄荷绿 */
+    --green-lime: #c6ff00;   /* 青柠绿 */
+    --green-neon: #76ff03;   /* 荧光绿 */
+    --green-pale: #f4ff81;   /* 嫩黄绿 */
+    --green-tech: #00e676;   /* 科技绿 */
+    
+    /* 辅助色 */
+    --stroke-white: #ffffff; 
+    --shadow-deep: #0d47a1;  
+  }
+
+  body {
+    font-family: 'Varela Round', sans-serif;
+    background-color: var(--page-bg);
+    padding: 20px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    color: var(--bg-blue);
+    text-align: center;
+    font-family: 'Fredoka One', cursive;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    width: 100%;
+    max-width: 1000px;
+    margin-bottom: 40px;
+  }
+
+  .design-card {
+    background-color: var(--bg-blue);
+    border-radius: 20px;
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 10px 25px rgba(47, 150, 235, 0.4);
+    border: 4px solid rgba(255,255,255,0.2);
+    min-height: 220px;
+    position: relative;
+    overflow: hidden; /* 确保装饰不跑出去 */
+    transition: transform 0.2s;
+    z-index: 1;
+  }
+  
+  .design-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .card-label {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+    background: rgba(0,0,0,0.1);
+    padding: 4px 8px;
+    border-radius: 8px;
+    z-index: 10;
+  }
+
+  .text-container {
+    text-align: center;
+    width: 100%;
+    z-index: 5; /* 确保文字在装饰上面 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  
+  .text-line {
+    display: block;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  
+  .amp-line {
+    font-size: 0.5em;
+    margin: 5px 0;
+    opacity: 0.9;
+  }
+
+  /* ================= Style 1: 软萌泡泡 (Bubbly) ================= */
+  .style-bubbly .text-line {
+    font-family: 'Fredoka One', cursive;
+    color: var(--green-mint);
+    font-size: 42px;
+    text-shadow: 3px 3px 0px var(--shadow-deep);
+    letter-spacing: 1.5px;
+  }
+  .style-bubbly .amp-line { color: #fff; text-shadow: 2px 2px 0px var(--shadow-deep); }
+  
+  /* 【新增装饰】：半透明漂浮气泡 */
+  .style-bubbly::before, .style-bubbly::after {
+    content: "";
+    position: absolute;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    z-index: 2;
+  }
+  .style-bubbly::before { width: 80px; height: 80px; top: -10px; right: -10px; }
+  .style-bubbly::after { width: 50px; height: 50px; bottom: 20px; left: 20px; }
+
+
+  /* ================= Style 2: 俏皮手写 (Script) ================= */
+  .style-script .text-container { transform: rotate(-3deg); }
+  .style-script .text-line {
+    font-family: 'Pacifico', cursive;
+    color: var(--green-lime);
+    font-size: 42px;
+    filter: drop-shadow(0px 0px 5px rgba(198, 255, 0, 0.4));
+  }
+  .style-script .amp-line { font-family: 'Varela Round', sans-serif; font-size: 24px; color: var(--green-pale); }
+
+  /* 【新增装饰】：星星、爱心和小点点 */
+  /* 使用伪元素插入 Emoji */
+  .style-script::before {
+    content: "★";
+    position: absolute;
+    top: 30px; right: 30px;
+    color: var(--green-pale);
+    font-size: 24px;
+    transform: rotate(20deg);
+    opacity: 0.8;
+    z-index: 2;
+  }
+  .style-script::after {
+    content: "♥ •";
+    position: absolute;
+    bottom: 30px; left: 30px;
+    color: white;
+    font-size: 20px;
+    transform: rotate(-20deg);
+    opacity: 0.6;
+    z-index: 2;
+    word-spacing: 10px;
+  }
+
+
+  /* ================= Style 3: 童趣贴纸 (Sticker) ================= */
+  .style-sticker {
+    /* 【新增装饰】：可爱的波点背景纹理 */
+    /* 利用 CSS 径向渐变模拟波点 */
+    background-image: radial-gradient(rgba(255,255,255,0.2) 15%, transparent 16%);
+    background-size: 20px 20px; /* 波点的大小和密度 */
+  }
+  .style-sticker .text-line {
+    font-family: 'Titan One', cursive;
+    color: var(--green-neon);
+    font-size: 38px;
+    -webkit-text-stroke: 5px var(--stroke-white);
+    paint-order: stroke fill;
+    filter: drop-shadow(4px 4px 0px rgba(0,0,0,0.15));
+    margin-bottom: -5px;
+  }
+  .style-sticker .amp-line { -webkit-text-stroke: 3px var(--stroke-white); font-size: 20px; margin: 10px 0; }
+
+
+  /* ================= Style 4: 8-bit 像素 (Pixel) ================= */
+  .style-pixel .text-line {
+    font-family: 'Press Start 2P', cursive;
+    color: var(--green-tech);
+    font-size: 24px;
+    text-shadow: 4px 4px 0px black;
+    line-height: 1.5;
+    margin-bottom: 5px;
+  }
+  .style-pixel .amp-line { font-size: 16px; color: #fff; text-shadow: 3px 3px 0px black; }
+  
+  /* 【新增装饰】：像素小幽灵和方块 */
+  .style-pixel::before {
+    content: "👾"; /* 像素外星人/幽灵 Emoji */
+    position: absolute;
+    top: 25px; right: 25px;
+    font-size: 30px;
+    opacity: 0.8;
+    z-index: 2;
+    filter: drop-shadow(2px 2px 0px black);
+  }
+  .style-pixel::after {
+    /* 利用 CSS box-shadow 绘制像素点 */
+    content: "";
+    position: absolute;
+    bottom: 30px; left: 30px;
+    width: 10px; height: 10px;
+    background: var(--green-tech);
+    box-shadow: 10px -10px 0 white, 20px 0 0 var(--green-pale); 
+    z-index: 2;
+  }
+
+
+  /* ================= Style 5: Q弹果冻 (Jelly) ================= */
+  .style-jelly .text-line {
+    font-family: 'Varela Round', sans-serif;
+    color: var(--green-pale);
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.1), inset 0 0 10px rgba(255,255,255,0.5);
+    line-height: 0.9;
+  }
+  .style-jelly .amp-line { font-size: 20px; color: rgba(255,255,255,0.8); margin: 8px 0; }
+  
+  /* 【新增装饰】：Blingbling 闪光符号 */
+  .style-jelly::before {
+    content: "✦";
+    position: absolute;
+    top: 40px; left: 40px;
+    color: white;
+    font-size: 28px;
+    opacity: 0.8;
+    z-index: 2;
+    animation: sparkle 1.5s infinite alternate;
+  }
+  .style-jelly::after {
+    content: "✨";
+    position: absolute;
+    bottom: 40px; right: 40px;
+    font-size: 24px;
+    opacity: 0.8;
+    z-index: 2;
+    animation: sparkle 2s infinite alternate-reverse;
+  }
+
+
+  /* ================= Style 6: 快乐蜡笔 (Crayon) ================= */
+  .style-crayon .text-line {
+    font-family: 'Chewy', cursive;
+    color: var(--green-lime);
+    font-size: 48px;
+    transform: skewX(-5deg);
+    text-shadow: 3px 3px 0px rgba(255, 255, 255, 0.2);
+    line-height: 1.0;
+  }
+  .style-crayon .amp-line { font-size: 24px; transform: rotate(10deg); color: #fff; }
+  
+  /* 【新增装饰】：涂鸦波浪线 */
+  .style-crayon::after {
+    content: "〰〰〰"; /* 波浪线符号 */
+    position: absolute;
+    bottom: 25px;
+    color: rgba(255,255,255,0.4);
+    font-size: 24px;
+    letter-spacing: -3px;
+    transform: rotate(-5deg);
+    font-family: sans-serif;
+    z-index: 2;
+  }
+
+  /* 简单的闪烁动画 */
+  @keyframes sparkle {
+    0% { opacity: 0.5; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1.1); }
+  }
+
+</style>
+</head>
+<body>
+
+  <h1>Decorated Cute Collection</h1>
+
+  <div class="grid-container">
+    
+    <div class="design-card style-bubbly">
+      <span class="card-label">1. 软萌泡泡 (Bubbly)</span>
+      <div class="text-container">
+        <span class="text-line">NOZOMI</span>
+        <span class="text-line amp-line">&</span>
+        <span class="text-line">HIKARI</span>
+      </div>
+    </div>
+
+    <div class="design-card style-script">
+      <span class="card-label">2. 俏皮手写 (Script)</span>
+      <div class="text-container">
+        <span class="text-line">NOZOMI</span>
+        <span class="text-line amp-line">&</span>
+        <span class="text-line">HIKARI</span>
+      </div>
+    </div>
+
+    <div class="design-card style-sticker">
+      <span class="card-label">3. 童趣贴纸 (Sticker)</span>
+      <div class="text-container">
+        <span class="text-line">NOZOMI</span>
+        <span class="text-line amp-line">&</span>
+        <span class="text-line">HIKARI</span>
+      </div>
+    </div>
+
+    <div class="design-card style-pixel">
+      <span class="card-label">4. 8-bit 像素 (Pixel)</span>
+      <div class="text-container">
+        <span class="text-line">NOZOMI</span>
+        <span class="text-line amp-line">&</span>
+        <span class="text-line">HIKARI</span>
+      </div>
+    </div>
+
+    <div class="design-card style-jelly">
+      <span class="card-label">5. Q弹果冻 (Jelly)</span>
+      <div class="text-container">
+        <span class="text-line">NOZOMI</span>
+        <span class="text-line amp-line">&</span>
+        <span class="text-line">HIKARI</span>
+      </div>
+    </div>
+
+    <div class="design-card style-crayon">
+      <span class="card-label">6. 快乐蜡笔 (Crayon)</span>
+      <div class="text-container">
+        <span class="text-line">NOZOMI</span>
+        <span class="text-line amp-line">&</span>
+        <span class="text-line">HIKARI</span>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

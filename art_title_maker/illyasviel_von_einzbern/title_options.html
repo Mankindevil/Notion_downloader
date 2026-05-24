@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Illyasviel von Einzbern — Title Options</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Bowlby+One&family=Bungee&family=Chewy&family=Fredoka:wght@600;700&family=Lobster&family=Mochiy+Pop+One&family=Pacifico&family=Zen+Maru+Gothic:wght@700;900&family=Cinzel+Decorative:wght@700;900&family=Marcellus+SC&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Canvas — the pink gradient from 伊利亚.png */
+      --art-bg: linear-gradient(180deg, #FF2A8C 0%, #FF6BA0 45%, #FFB5A8 100%);
+
+      /* Palette extracted from プリヤ☆.png + Prisma☆Illya card art DNA */
+      --white:    #FFFFFF;
+      --cream:    #FFF8E7;
+      --pink-hot: #FF1F7A;
+      --pink:     #FF4D94;
+      --pink-soft:#FFC2D9;
+      --burgundy: #6B0F3A;
+      --yellow:   #FFD93D;
+      --yellow-d: #F4A91E;
+      --red-eye:  #E63946;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: var(--art-bg); background-attachment: fixed; }
+    body {
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+      padding: 56px 24px;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Fredoka', sans-serif;
+    }
+
+    .label {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
+      color: rgba(255,255,255,0.92);
+      font-size: 0.82rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 6px rgba(107,15,58,0.5);
+    }
+
+    .card {
+      width: 860px;
+      background: transparent;   /* STRICT */
+      box-shadow: none;          /* STRICT */
+      padding: 70px 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       A — "Prisma Star Card"
+       Big chunky katakana hero, white with hot-pink stroke + yellow hard
+       shadow. Scattered stars and hearts. Skewed for motion.
+       ═══════════════════════════════════════════════════════════════════════ */
+    .card-a .a-furi {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.42em;
+      color: var(--white);
+      text-shadow: 2px 2px 0 var(--burgundy);
+      margin-bottom: 14px;
+    }
+    .card-a .a-hero {
+      font-family: 'Mochiy Pop One', sans-serif;
+      font-size: 8rem;
+      color: var(--white);
+      letter-spacing: 0.04em;
+      -webkit-text-stroke: 8px var(--pink-hot);
+      paint-order: stroke fill;
+      text-shadow:
+        6px 8px 0 var(--yellow),
+        10px 14px 0 var(--burgundy);
+      line-height: 0.95;
+      transform: skewX(-4deg) rotate(-2deg);
+    }
+    .card-a .a-amp {
+      font-family: 'Bagel Fat One', cursive;
+      font-size: 2.6rem;
+      color: var(--yellow);
+      letter-spacing: 0.04em;
+      margin-top: 12px;
+      -webkit-text-stroke: 3px var(--pink-hot);
+      paint-order: stroke fill;
+      text-shadow: 3px 4px 0 var(--burgundy);
+    }
+    .card-a .a-sub {
+      font-family: 'Bagel Fat One', cursive;
+      font-size: 1.5rem;
+      letter-spacing: 0.4em;
+      color: var(--white);
+      margin-top: 14px;
+      -webkit-text-stroke: 2px var(--pink-hot);
+      paint-order: stroke fill;
+      text-shadow: 3px 3px 0 var(--burgundy);
+    }
+    .card-a .a-scatter {
+      position: absolute;
+      font-family: 'Mochiy Pop One', sans-serif;
+      pointer-events: none;
+      text-shadow: 2px 3px 0 var(--burgundy);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       B — "Zig-Zag Card"
+       Broken-name across diagonal. Each word offset. Strong motion.
+       Romaji hero in Bagel Fat One.
+       ═══════════════════════════════════════════════════════════════════════ */
+    .card-b { align-items: stretch; padding: 90px 60px 80px; }
+    .card-b .b-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto auto auto;
+      gap: 6px 12px;
+      position: relative;
+    }
+    .card-b .b-hero {
+      font-family: 'Bagel Fat One', cursive;
+      font-size: 5.4rem;
+      color: var(--white);
+      line-height: 0.92;
+      letter-spacing: 0.01em;
+      -webkit-text-stroke: 5px var(--pink-hot);
+      paint-order: stroke fill;
+      text-shadow:
+        4px 6px 0 var(--yellow),
+        8px 11px 0 var(--burgundy);
+      transform: rotate(-3deg);
+    }
+    .card-b .b-1 { grid-column: 1 / 3; grid-row: 1; align-self: end; }
+    .card-b .b-2 { grid-column: 2 / 4; grid-row: 2; text-align: right; transform: rotate(2deg) translateX(20px); }
+    .card-b .b-3 { grid-column: 1 / 3; grid-row: 3; align-self: start; transform: rotate(-2deg) translateX(-10px); }
+    .card-b .b-amp {
+      grid-column: 1 / 4;
+      grid-row: 2;
+      justify-self: start;
+      align-self: center;
+      font-family: 'Pacifico', cursive;
+      font-size: 3.2rem;
+      color: var(--yellow);
+      text-shadow: 3px 4px 0 var(--burgundy);
+      transform: rotate(-8deg);
+      margin-left: 10px;
+    }
+    .card-b .b-kana {
+      grid-column: 1 / 4;
+      grid-row: 4;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 900;
+      font-size: 1.1rem;
+      color: var(--white);
+      letter-spacing: 0.34em;
+      text-align: center;
+      margin-top: 24px;
+      text-shadow: 2px 3px 0 var(--burgundy);
+    }
+    .card-b .b-scatter {
+      position: absolute;
+      font-family: 'Mochiy Pop One', sans-serif;
+      pointer-events: none;
+      text-shadow: 2px 2px 0 var(--burgundy);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       C — "Sticker Pop Badge"
+       Bungee thick stroke, hard offset, magical-girl badge above. The
+       'PRISMA☆ILLYA' card-form callout.
+       ═══════════════════════════════════════════════════════════════════════ */
+    .card-c .c-badge {
+      background: var(--white);
+      border-radius: 100px;
+      padding: 8px 28px;
+      font-family: 'Bungee', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.48em;
+      color: var(--pink-hot);
+      box-shadow:
+        0 4px 0 var(--burgundy),
+        0 0 0 4px var(--pink-hot) inset;
+      margin-bottom: 26px;
+      transform: rotate(-3deg);
+      text-indent: 0.48em;
+    }
+    .card-c .c-hero {
+      font-family: 'Bungee', sans-serif;
+      font-size: 5.2rem;
+      color: var(--yellow);
+      letter-spacing: 0.05em;
+      -webkit-text-stroke: 7px var(--pink-hot);
+      paint-order: stroke fill;
+      text-shadow:
+        5px 7px 0 var(--white),
+        9px 12px 0 var(--burgundy);
+      line-height: 1;
+    }
+    .card-c .c-star {
+      font-family: 'Mochiy Pop One', sans-serif;
+      font-size: 4.2rem;
+      color: var(--white);
+      margin: 0 0.2em;
+      text-shadow:
+        4px 6px 0 var(--pink-hot),
+        7px 10px 0 var(--burgundy);
+      display: inline-block;
+      transform: rotate(-10deg);
+    }
+    .card-c .c-row { display: flex; align-items: center; }
+    .card-c .c-kana {
+      font-family: 'Mochiy Pop One', sans-serif;
+      font-size: 1.5rem;
+      color: var(--white);
+      letter-spacing: 0.34em;
+      margin-top: 22px;
+      -webkit-text-stroke: 2.5px var(--pink-hot);
+      paint-order: stroke fill;
+      text-shadow: 3px 4px 0 var(--burgundy);
+    }
+    .card-c .c-en {
+      font-family: 'Bungee', sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.45em;
+      color: var(--white);
+      margin-top: 18px;
+      text-shadow: 2px 2px 0 var(--burgundy);
+    }
+    .card-c .c-deco {
+      margin-top: 16px;
+      font-size: 1.4rem;
+      letter-spacing: 0.4em;
+      color: var(--yellow);
+      text-shadow: 2px 2px 0 var(--burgundy);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       D — "Sugar Script"
+       Pacifico cursive Illya — soft & sweet. Pink heart cluster + sparkle
+       crown above. The "diary entry / scrapbook" feeling.
+       ═══════════════════════════════════════════════════════════════════════ */
+    .card-d .d-crown {
+      font-family: 'Mochiy Pop One', sans-serif;
+      font-size: 1.6rem;
+      color: var(--yellow);
+      letter-spacing: 0.3em;
+      margin-bottom: 6px;
+      text-shadow: 2px 3px 0 var(--burgundy);
+    }
+    .card-d .d-furi {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.55em;
+      color: var(--white);
+      margin-bottom: 18px;
+      text-shadow: 1px 2px 0 var(--burgundy);
+      text-indent: 0.55em;
+    }
+    .card-d .d-hero {
+      font-family: 'Pacifico', cursive;
+      font-size: 8.5rem;
+      color: var(--white);
+      line-height: 0.85;
+      letter-spacing: -0.01em;
+      -webkit-text-stroke: 4px var(--pink-hot);
+      paint-order: stroke fill;
+      text-shadow:
+        4px 6px 0 var(--yellow),
+        7px 11px 0 var(--burgundy),
+        0 0 30px rgba(255,255,255,0.4);
+      transform: rotate(-3deg);
+    }
+    .card-d .d-flourish {
+      width: 280px;
+      height: 14px;
+      margin: 22px auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .card-d .d-flourish::before,
+    .card-d .d-flourish::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--yellow), transparent);
+      border-radius: 1px;
+    }
+    .card-d .d-flourish span {
+      color: var(--white);
+      font-size: 1.4rem;
+      text-shadow: 2px 2px 0 var(--burgundy);
+    }
+    .card-d .d-script {
+      font-family: 'Lobster', cursive;
+      font-size: 2.4rem;
+      color: var(--yellow);
+      letter-spacing: 0.02em;
+      transform: rotate(-2deg);
+      -webkit-text-stroke: 2px var(--pink-hot);
+      paint-order: stroke fill;
+      text-shadow: 3px 4px 0 var(--burgundy);
+    }
+    .card-d .d-en {
+      font-family: 'Marcellus SC', serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.46em;
+      color: var(--white);
+      margin-top: 18px;
+      text-shadow: 1px 2px 0 var(--burgundy);
+      text-indent: 0.46em;
+    }
+    .card-d .d-hearts {
+      position: absolute;
+      font-family: 'Mochiy Pop One', sans-serif;
+      pointer-events: none;
+      text-shadow: 2px 3px 0 var(--burgundy);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="label">A — Prisma Star Card</div>
+  <div class="card card-a" id="card-a">
+    <span class="a-scatter" style="top: 28px; left: 60px; font-size: 1.8rem; color: var(--yellow); transform: rotate(-15deg);">★</span>
+    <span class="a-scatter" style="top: 18px; right: 90px; font-size: 1.2rem; color: var(--white); transform: rotate(10deg);">✦</span>
+    <span class="a-scatter" style="top: 60px; right: 40px; font-size: 2.2rem; color: var(--yellow); transform: rotate(20deg);">☆</span>
+    <span class="a-scatter" style="bottom: 70px; left: 30px; font-size: 2rem; color: var(--white); transform: rotate(-12deg);">♡</span>
+    <span class="a-scatter" style="bottom: 30px; left: 130px; font-size: 1.3rem; color: var(--yellow); transform: rotate(8deg);">✦</span>
+    <span class="a-scatter" style="bottom: 50px; right: 70px; font-size: 1.7rem; color: var(--white); transform: rotate(15deg);">★</span>
+    <span class="a-scatter" style="bottom: 100px; right: 30px; font-size: 1.1rem; color: var(--yellow); transform: rotate(-20deg);">♡</span>
+    <span class="a-scatter" style="top: 130px; left: 30px; font-size: 1.1rem; color: var(--white); transform: rotate(20deg);">☆</span>
+
+    <div class="a-furi">いりやすふぃーる・ふぉん・あいんつべるん</div>
+    <div class="a-hero">イリヤ</div>
+    <div class="a-amp">☆</div>
+    <div class="a-sub">VON EINZBERN</div>
+  </div>
+
+  <div class="label">B — Zig-Zag Card</div>
+  <div class="card card-b" id="card-b">
+    <span class="b-scatter" style="top: 40px; left: 50px; font-size: 1.5rem; color: var(--white); transform: rotate(-15deg);">✦</span>
+    <span class="b-scatter" style="top: 20px; right: 60px; font-size: 2.4rem; color: var(--yellow); transform: rotate(18deg);">☆</span>
+    <span class="b-scatter" style="bottom: 60px; left: 40px; font-size: 1.8rem; color: var(--yellow); transform: rotate(-8deg);">★</span>
+    <span class="b-scatter" style="bottom: 30px; right: 50px; font-size: 1.4rem; color: var(--white); transform: rotate(12deg);">♡</span>
+
+    <div class="b-grid">
+      <div class="b-hero b-1">ILLYA</div>
+      <div class="b-amp">von</div>
+      <div class="b-hero b-2">EINZ-</div>
+      <div class="b-hero b-3">BERN</div>
+      <div class="b-kana">イリヤスフィール ・ フォン ・ アインツベルン</div>
+    </div>
+  </div>
+
+  <div class="label">C — Sticker Pop Badge</div>
+  <div class="card card-c" id="card-c">
+    <div class="c-badge">MAGICAL ☆ GIRL</div>
+    <div class="c-row">
+      <div class="c-hero">PRISMA</div>
+      <span class="c-star">☆</span>
+      <div class="c-hero">ILLYA</div>
+    </div>
+    <div class="c-kana">イリヤスフィール ・ フォン ・ アインツベルン</div>
+    <div class="c-en">ILLYASVIEL&nbsp;&nbsp;VON&nbsp;&nbsp;EINZBERN</div>
+    <div class="c-deco">★ ♡ ★</div>
+  </div>
+
+  <div class="label">D — Sugar Script</div>
+  <div class="card card-d" id="card-d">
+    <span class="d-hearts" style="top: 30px; left: 60px; font-size: 1.8rem; color: var(--yellow); transform: rotate(-15deg);">♡</span>
+    <span class="d-hearts" style="top: 50px; right: 80px; font-size: 1.4rem; color: var(--white); transform: rotate(20deg);">✦</span>
+    <span class="d-hearts" style="bottom: 50px; left: 50px; font-size: 1.6rem; color: var(--white); transform: rotate(-10deg);">★</span>
+    <span class="d-hearts" style="bottom: 70px; right: 60px; font-size: 2rem; color: var(--yellow); transform: rotate(15deg);">♡</span>
+
+    <div class="d-crown">✦ ☆ ✦</div>
+    <div class="d-furi">イリヤスフィール</div>
+    <div class="d-hero">Illya</div>
+    <div class="d-flourish"><span>♡</span></div>
+    <div class="d-script">von Einzbern</div>
+    <div class="d-en">PRISMA &nbsp;☆&nbsp; MAGICAL GIRL</div>
+  </div>
+
+</body>
+</html>

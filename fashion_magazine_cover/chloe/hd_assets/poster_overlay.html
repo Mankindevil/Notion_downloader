@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chloe Movie Poster Overlay</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital@1&family=Inter:wght@400;700&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: transparent;
+    color: #fff;
+  }
+
+  :root {
+    --base-w: 1024;
+    --base-h: 761;
+    --sx: 1;
+    --sy: 1;
+    --s: 1;
+    --orange: #ff9000;
+    --black: #000;
+    --ink: #fff;
+
+    /* base-coordinate layout (1024x761) — values derived from reference image blob analysis */
+    --side-left: 67;
+    --side-top: 18;
+    --side-width: 33;
+    --side-height: 720;
+    --side-line: 3;
+
+    --masthead-left: 354;
+    --masthead-top: 31;
+
+    --rating-left: 130;
+    --rating-top: 46;
+
+    --premium-left: 118;
+    --premium-top: 316;
+
+    --title-top: 346;
+    --title-right: 99;
+
+    --name-left: 119;
+    --name-top: 592;
+    --mark-left: 281;
+    --mark-top: 568;
+
+    --issue-left: 358;
+    --issue-top: 647;
+
+    --disc-left: 300;
+    --disc-top: 659;
+    --disc-width: 414;
+
+    --barcode-left: 125;
+    --barcode-top: 320;
+    --barcode-num-top: 357;
+
+    --stack-left: 857;
+    --stack-top: 683;
+  }
+
+  .poster {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .side-rail {
+    position: absolute;
+    left: calc(var(--side-left) * var(--sx) * 1px);
+    top: calc(var(--side-top) * var(--sy) * 1px);
+    width: calc(var(--side-width) * var(--sx) * 1px);
+    height: calc(var(--side-height) * var(--sy) * 1px);
+    background: var(--black);
+    border-right: calc(var(--side-line) * var(--s) * 1px) solid var(--orange);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .side-rail span {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: "Anton", sans-serif;
+    font-size: calc(20 * var(--s) * 1px);
+    letter-spacing: 0.35em;
+    color: var(--orange);
+    text-transform: uppercase;
+  }
+
+  .ph-masthead {
+    position: absolute;
+    top: calc(var(--masthead-top) * var(--sy) * 1px);
+    left: calc(var(--masthead-left) * var(--sx) * 1px);
+    display: flex;
+    align-items: baseline;
+    white-space: nowrap;
+  }
+  .ph-masthead .ph-left,
+  .ph-masthead .ph-right {
+    font-family: "Anton", sans-serif;
+    font-size: calc(54 * var(--s) * 1px);
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-transform: lowercase;
+    line-height: 1;
+    text-shadow: calc(4 * var(--s) * 1px) calc(4 * var(--s) * 1px) 0 var(--black);
+  }
+  .ph-masthead .hub {
+    display: inline-block;
+    font-family: "Anton", sans-serif;
+    font-size: calc(54 * var(--s) * 1px);
+    line-height: 1;
+    text-transform: lowercase;
+    background: var(--orange);
+    color: var(--black);
+    padding: calc(2 * var(--s) * 1px) calc(12 * var(--s) * 1px) calc(5 * var(--s) * 1px);
+    margin-left: calc(2 * var(--s) * 1px);
+    text-shadow: none;
+    box-shadow: calc(4 * var(--s) * 1px) calc(4 * var(--s) * 1px) 0 var(--black);
+  }
+
+  .rating-badge {
+    position: absolute;
+    top: calc(var(--rating-top) * var(--sy) * 1px);
+    left: calc(var(--rating-left) * var(--sx) * 1px);
+    border: calc(3 * var(--s) * 1px) solid var(--orange);
+    color: var(--orange);
+    font-family: "Anton", sans-serif;
+    font-size: calc(22 * var(--s) * 1px);
+    padding: calc(6 * var(--s) * 1px) calc(12 * var(--s) * 1px) calc(8 * var(--s) * 1px);
+    letter-spacing: 0.08em;
+    text-shadow: calc(2 * var(--s) * 1px) calc(2 * var(--s) * 1px) 0 var(--black);
+    transform: rotate(2deg);
+  }
+
+  .vol-pill {
+    position: absolute;
+    top: calc(var(--premium-top) * var(--sy) * 1px);
+    left: calc(var(--premium-left) * var(--sx) * 1px);
+    background: var(--orange);
+    color: var(--black);
+    font-family: "Anton", sans-serif;
+    font-size: calc(28 * var(--s) * 1px);
+    letter-spacing: 0.08em;
+    padding: calc(5 * var(--s) * 1px) calc(16 * var(--s) * 1px) calc(7 * var(--s) * 1px);
+    text-transform: uppercase;
+    box-shadow: calc(4 * var(--s) * 1px) calc(4 * var(--s) * 1px) 0 var(--black);
+    transform: rotate(-4deg);
+  }
+
+  .poster-block {
+    position: absolute;
+    top: calc(var(--title-top) * var(--sy) * 1px);
+    right: calc(var(--title-right) * var(--sx) * 1px);
+    text-align: right;
+  }
+  .poster-block .big {
+    font-family: "Anton", sans-serif;
+    font-size: calc(70 * var(--s) * 1px);
+    line-height: 0.86;
+    color: var(--ink);
+    text-transform: uppercase;
+    text-shadow: calc(4 * var(--s) * 1px) calc(4 * var(--s) * 1px) 0 var(--black);
+  }
+  .poster-block .big.mid {
+    color: var(--orange);
+  }
+  .poster-block .small {
+    margin: 0 0 calc(2 * var(--s) * 1px);
+    font-family: "Oswald", sans-serif;
+    font-size: calc(12 * var(--s) * 1px);
+    letter-spacing: 0.42em;
+    color: var(--orange);
+    text-transform: uppercase;
+    text-shadow: calc(2 * var(--s) * 1px) calc(2 * var(--s) * 1px) 0 var(--black);
+  }
+
+  .star-name {
+    position: absolute;
+    top: calc(var(--name-top) * var(--sy) * 1px);
+    left: calc(var(--name-left) * var(--sx) * 1px);
+    font-family: "Anton", sans-serif;
+    font-size: calc(72 * var(--s) * 1px);
+    color: var(--ink);
+    text-transform: uppercase;
+    line-height: 0.9;
+    text-shadow: calc(5 * var(--s) * 1px) calc(5 * var(--s) * 1px) 0 var(--black);
+  }
+  .star-x {
+    position: absolute;
+    top: calc(var(--mark-top) * var(--sy) * 1px);
+    left: calc(var(--mark-left) * var(--sx) * 1px);
+    background: var(--orange);
+    color: var(--black);
+    font-family: "Anton", sans-serif;
+    font-size: calc(72 * var(--s) * 1px);
+    line-height: 0.85;
+    padding: calc(6 * var(--s) * 1px) calc(12 * var(--s) * 1px) calc(36 * var(--s) * 1px);
+    box-shadow: calc(4 * var(--s) * 1px) calc(4 * var(--s) * 1px) 0 var(--black);
+  }
+
+  .sig-tag {
+    position: absolute;
+    top: calc(var(--issue-top) * var(--sy) * 1px);
+    left: calc(var(--issue-left) * var(--sx) * 1px);
+    font-family: "Cormorant Garamond", serif;
+    font-style: italic;
+    font-size: calc(18 * var(--s) * 1px);
+    color: var(--ink);
+    letter-spacing: 0.02em;
+    text-shadow: calc(2 * var(--s) * 1px) calc(2 * var(--s) * 1px) 0 var(--black);
+  }
+
+  .discretion {
+    position: absolute;
+    top: calc(var(--disc-top) * var(--sy) * 1px);
+    left: calc(var(--disc-left) * var(--sx) * 1px);
+    width: calc(var(--disc-width) * var(--sx) * 1px);
+    font-family: "Anton", sans-serif;
+    font-size: calc(11 * var(--s) * 1px);
+    letter-spacing: 0.36em;
+    color: var(--orange);
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+    text-shadow: calc(2 * var(--s) * 1px) calc(2 * var(--s) * 1px) 0 var(--black);
+  }
+
+  .barcode {
+    position: absolute;
+    top: calc(var(--barcode-top) * var(--sy) * 1px);
+    left: calc(var(--barcode-left) * var(--sx) * 1px);
+    display: flex;
+    gap: calc(2 * var(--sx) * 1px);
+    height: calc(34 * var(--sy) * 1px);
+  }
+  .barcode span { display: block; background: var(--ink); }
+  .bc-num {
+    position: absolute;
+    top: calc(var(--barcode-num-top) * var(--sy) * 1px);
+    left: calc(var(--barcode-left) * var(--sx) * 1px);
+    font-family: "Inter", monospace;
+    font-size: calc(9 * var(--s) * 1px);
+    letter-spacing: 0.28em;
+    color: var(--ink);
+    opacity: 0.85;
+    text-shadow: calc(1 * var(--s) * 1px) calc(1 * var(--s) * 1px) 0 var(--black);
+  }
+
+  .iss-stack {
+    position: absolute;
+    top: calc(var(--stack-top) * var(--sy) * 1px);
+    left: calc(var(--stack-left) * var(--sx) * 1px);
+    font-family: "Anton", sans-serif;
+    font-size: calc(11 * var(--s) * 1px);
+    letter-spacing: 0.28em;
+    color: var(--ink);
+    line-height: 1.65;
+    text-align: right;
+    text-transform: uppercase;
+    text-shadow: calc(1 * var(--s) * 1px) calc(1 * var(--s) * 1px) 0 var(--black);
+  }
+</style>
+</head>
+<body>
+  <div class="poster">
+    <div class="side-rail"><span data-role="side">NOW SHOWING</span></div>
+
+    <div class="ph-masthead">
+      <span class="ph-left" data-role="masthead-left">movie</span>
+      <span class="ph-right" data-role="masthead-right">vault</span><span class="hub" data-role="hub-label">hub</span>
+    </div>
+
+    <div class="rating-badge" data-role="rating">PG-13</div>
+    <div class="vol-pill" data-role="premium">PREMIUM</div>
+
+    <div class="poster-block">
+      <div class="big" data-role="title-top">THE</div>
+      <div class="big mid" data-role="title-middle">KALEID</div>
+      <div class="small" data-role="starring">★ STARRING CHLOE ★</div>
+      <div class="big" data-role="title-bottom">MOVIE</div>
+    </div>
+
+    <div class="star-name" data-role="name">CHLOE</div>
+    <div class="star-x" data-role="name-mark">×</div>
+
+    <div class="sig-tag" data-role="issue">spring kaleid issue</div>
+    <div class="discretion" data-role="discretion">★ VIEWER DISCRETION ADVISED ★</div>
+
+    <div class="barcode">
+      <span style="width:3px"></span><span style="width:1.5px"></span><span style="width:2px"></span>
+      <span style="width:1px"></span><span style="width:3px"></span><span style="width:2px"></span>
+      <span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span>
+      <span style="width:1px"></span><span style="width:2px"></span><span style="width:1px"></span>
+      <span style="width:2.5px"></span><span style="width:1.5px"></span>
+    </div>
+    <div class="bc-num" data-role="barcode">4 901234 567890</div>
+    <div class="iss-stack"><span data-role="date">MAY 26</span><br><span data-role="price">¥980</span></div>
+  </div>
+
+  <script>
+    const LAYOUT_KEYS = [
+      "side-left", "side-top", "side-width", "side-height", "side-line",
+      "masthead-left", "masthead-top",
+      "rating-left", "rating-top",
+      "premium-left", "premium-top",
+      "title-top", "title-right",
+      "name-left", "name-top", "mark-left", "mark-top",
+      "issue-left", "issue-top",
+      "disc-left", "disc-top", "disc-width",
+      "barcode-left", "barcode-top", "barcode-num-top",
+      "stack-left", "stack-top"
+    ];
+
+    const TEXT_BINDINGS = {
+      side: "side",
+      mastheadLeft: "masthead-left",
+      mastheadRight: "masthead-right",
+      hubLabel: "hub-label",
+      rating: "rating",
+      premium: "premium",
+      titleTop: "title-top",
+      titleMiddle: "title-middle",
+      titleBottom: "title-bottom",
+      starring: "starring",
+      name: "name",
+      nameMark: "name-mark",
+      issue: "issue",
+      discretion: "discretion",
+      barcode: "barcode",
+      date: "date",
+      price: "price"
+    };
+
+    function setText(role, value) {
+      if (typeof value !== "string") return;
+      const el = document.querySelector(`[data-role="${role}"]`);
+      if (el) el.textContent = value;
+    }
+
+    function applyConfig(config) {
+      const texts = config?.texts || {};
+      Object.entries(TEXT_BINDINGS).forEach(([jsonKey, role]) => {
+        setText(role, texts[jsonKey]);
+      });
+
+      const layout = config?.layout || {};
+      LAYOUT_KEYS.forEach((key) => {
+        if (layout[key] === undefined || layout[key] === null) return;
+        const v = Number(layout[key]);
+        if (!Number.isNaN(v)) {
+          document.documentElement.style.setProperty(`--${key}`, String(v));
+        }
+      });
+    }
+
+    async function loadExternalConfig() {
+      if (window.POSTER_CONFIG) return window.POSTER_CONFIG;
+      try {
+        const res = await fetch("./config.json", { cache: "no-store" });
+        if (res.ok) return await res.json();
+      } catch (err) {
+        // no config.json — use CSS defaults
+      }
+      return null;
+    }
+
+    (async () => {
+      const config = await loadExternalConfig();
+      if (config) applyConfig(config);
+    })();
+  </script>
+</body>
+</html>

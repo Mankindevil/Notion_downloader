@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<!--
+  Chloe von Einzbern (クロエ / Kuro) — Fate/kaleid liner Prisma☆Illya
+  Background: solid hot pink #F879AE (from 小黑.png banner)
+  Palette: white text · crimson outfit accent · near-black (Kuro reference) · amber-gold (eyes)
+  Direction: magical-girl sticker pop with a dark/cheeky accent — plays the Chloe ↔ Kuro duality
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chloe von Einzbern — Title Options</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Bowlby+One&family=Bungee&family=Chewy&family=Cormorant+Garamond:ital,wght@0,700;0,900;1,700;1,900&family=Fredoka:wght@600;700&family=Marcellus+SC&family=Mochiy+Pop+One&family=Noto+Serif+JP:wght@700;900&family=Shrikhand&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --art-bg: #F879AE;       /* hot pink banner */
+      --text:   #FFFFFF;       /* white silver hair, max contrast on pink */
+      --crimson:#8B1A3A;       /* deep red from outfit — complements hot pink */
+      --black:  #1A1A1A;       /* Kuro / 黒 — the dark accent */
+      --gold:   #E8B43A;       /* amber eyes */
+      /* Magical-girl sticker palette (matches the Illya card-c style) */
+      --pink-hot: #FF1F7A;
+      --burgundy: #6B0F3A;
+      --yellow:   #FFD93D;
+      --white:    #FFFFFF;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: var(--art-bg); }
+    body { display: flex; flex-direction: column; gap: 48px; padding: 56px 24px; align-items: center; min-height: 100vh; font-family: sans-serif; }
+
+    .card {
+      width: 760px;
+      background: transparent;
+      box-shadow: none;
+      padding: 70px 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: visible;
+    }
+
+    /* ── A — Sticker Pop Magical-Girl, zig-zag layout ─────────────────── */
+    .card-a { padding: 80px 40px; }
+    .a-tag    { font-family: 'Mochiy Pop One', sans-serif; font-size: 0.85rem; letter-spacing: 0.55em; color: var(--text); text-shadow: 2px 2px 0 var(--black), 4px 4px 0 var(--crimson); align-self: center; margin-bottom: 20px; }
+    .a-row    { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; }
+    .a-hero1  { font-family: 'Bagel Fat One', sans-serif; font-size: 7.2rem; color: var(--text); letter-spacing: 0.01em; line-height: 0.95; -webkit-text-stroke: 4px var(--black); paint-order: stroke fill; text-shadow: 7px 9px 0 var(--crimson), 11px 14px 0 var(--black); transform: skewX(-7deg) rotate(-3deg); align-self: flex-start; margin-left: -10px; }
+    .a-amp    { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 900; font-size: 4.5rem; color: var(--gold); text-shadow: 3px 3px 0 var(--black), 5px 5px 0 var(--crimson); align-self: center; margin: 2px 0; transform: rotate(8deg); }
+    .a-hero2  { font-family: 'Bagel Fat One', sans-serif; font-size: 7.2rem; color: var(--text); letter-spacing: 0.01em; line-height: 0.95; -webkit-text-stroke: 4px var(--black); paint-order: stroke fill; text-shadow: 7px 9px 0 var(--crimson), 11px 14px 0 var(--black); transform: skewX(-7deg) rotate(2deg); align-self: flex-end; margin-right: -10px; }
+    .a-en     { font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.5em; color: var(--text); margin-top: 32px; text-transform: uppercase; text-shadow: 2px 2px 0 var(--black); align-self: center; }
+    .a-scatter{ position: absolute; pointer-events: none; text-shadow: 2px 2px 0 var(--black); }
+    .a-s1 { top: 22px;     left: 70px;    font-size: 1.6rem; color: var(--crimson); transform: rotate(-15deg); }
+    .a-s2 { top: 60px;     right: 50px;   font-size: 1.3rem; color: var(--text);    transform: rotate(20deg); }
+    .a-s3 { top: 270px;    left: 30px;    font-size: 1.1rem; color: var(--gold);    transform: rotate(-25deg); }
+    .a-s4 { bottom: 130px; right: 28px;   font-size: 1.5rem; color: var(--crimson); transform: rotate(15deg); }
+    .a-s5 { bottom: 80px;  left: 60px;    font-size: 1.2rem; color: var(--text);    transform: rotate(-10deg); }
+    .a-s6 { bottom: 40px;  right: 100px;  font-size: 1rem;   color: var(--gold); }
+
+    /* ── B — Editorial Italic Serif, asymmetric vertical-kanji split ── */
+    .card-b { flex-direction: row; align-items: stretch; gap: 40px; padding: 70px 50px; }
+    .b-left { flex: 0 0 170px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; position: relative; }
+    .b-kana { font-family: 'Noto Serif JP', serif; font-size: 0.95rem; letter-spacing: 0.55em; color: var(--gold); margin-bottom: 2px; }
+    .b-kanji{ font-family: 'Noto Serif JP', serif; font-weight: 900; font-size: 10rem; line-height: 1; color: var(--text); text-shadow: 4px 5px 0 var(--crimson), 7px 9px 0 var(--black); }
+    .b-rule { width: 1px; flex: 0 0 1px; background: linear-gradient(180deg, transparent, var(--gold), transparent); align-self: stretch; }
+    .b-right{ flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding-left: 6px; }
+    .b-hero { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 900; font-size: 7rem; color: var(--text); line-height: 0.9; letter-spacing: -0.02em; text-shadow: 0 0 26px rgba(255,255,255,0.55), 4px 5px 0 var(--crimson), 6px 8px 14px var(--black); }
+    .b-sub  { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 700; font-size: 2.6rem; color: var(--gold); line-height: 1; letter-spacing: 0.01em; text-shadow: 2px 3px 0 var(--black); margin-top: -4px; }
+    .b-class{ font-family: 'Marcellus SC', serif; font-size: 0.9rem; letter-spacing: 0.42em; color: var(--text); text-transform: uppercase; margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(232,180,58,0.7); }
+    .b-tag  { font-family: 'Marcellus SC', serif; font-size: 0.78rem; letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; margin-top: 4px; }
+
+    /* ── C — Sticker Pop Badge (Prisma☆Illya show-title style) ───────── */
+    /* Yellow fill + hot-pink stroke + burgundy hard offset. Matches the    */
+    /* Illya card-c treatment exactly.                                      */
+    .card-c .c-badge {
+      background: var(--white); border-radius: 100px; padding: 8px 28px;
+      font-family: 'Bungee', sans-serif; font-size: 0.85rem; letter-spacing: 0.48em;
+      color: var(--pink-hot);
+      box-shadow: 0 4px 0 var(--burgundy), 0 0 0 4px var(--pink-hot) inset;
+      margin-bottom: 26px; transform: rotate(-3deg); text-indent: 0.48em;
+    }
+    .card-c .c-row { display: flex; align-items: center; justify-content: center; }
+    .card-c .c-hero {
+      font-family: 'Bungee', sans-serif; font-size: 5.2rem; color: var(--yellow);
+      letter-spacing: 0.05em;
+      -webkit-text-stroke: 7px var(--pink-hot); paint-order: stroke fill;
+      text-shadow: 5px 7px 0 var(--white), 9px 12px 0 var(--burgundy);
+      line-height: 1;
+    }
+    .card-c .c-star {
+      font-family: 'Mochiy Pop One', sans-serif; font-size: 4.2rem;
+      color: var(--white); margin: 0 0.2em;
+      text-shadow: 4px 6px 0 var(--pink-hot), 7px 10px 0 var(--burgundy);
+      display: inline-block; transform: rotate(-10deg);
+    }
+    .card-c .c-kana {
+      font-family: 'Mochiy Pop One', sans-serif; font-size: 1.5rem;
+      color: var(--white); letter-spacing: 0.34em; margin-top: 22px;
+      -webkit-text-stroke: 2.5px var(--pink-hot); paint-order: stroke fill;
+      text-shadow: 3px 4px 0 var(--burgundy);
+    }
+    .card-c .c-en {
+      font-family: 'Bungee', sans-serif; font-size: 0.78rem; letter-spacing: 0.45em;
+      color: var(--white); margin-top: 18px;
+      text-shadow: 2px 2px 0 var(--burgundy);
+    }
+    .card-c .c-deco {
+      margin-top: 16px; font-size: 1.4rem; letter-spacing: 0.4em;
+      color: var(--yellow); text-shadow: 2px 2px 0 var(--burgundy);
+    }
+
+    /* ── D — Chrome-Display + 黒 Kanji Watermark ─────────────────────── */
+    .card-d { padding: 80px 40px; min-height: 380px; justify-content: center; }
+    .d-watermark { position: absolute; font-family: 'Noto Serif JP', serif; font-weight: 900; font-size: 22rem; line-height: 0.8; color: var(--black); opacity: 0.16; top: 50%; left: 50%; transform: translate(-50%, -52%); user-select: none; pointer-events: none; }
+    .d-furi  { font-family: 'Marcellus SC', serif; font-size: 0.82rem; letter-spacing: 0.62em; color: var(--gold); text-transform: uppercase; margin-bottom: 6px; text-shadow: 2px 2px 0 var(--black); position: relative; }
+    .d-hero  { font-family: 'Shrikhand', cursive; font-size: 7.4rem; color: var(--text); line-height: 1; letter-spacing: 0.01em; text-shadow: 3px 0 0 var(--crimson), -3px 0 0 var(--crimson), 0 3px 0 var(--crimson), 6px 6px 0 var(--black), 10px 10px 22px rgba(26,26,26,0.55); transform: skewX(-3deg); position: relative; }
+    .d-kata  { font-family: 'Bowlby One', sans-serif; font-size: 1.6rem; color: var(--text); -webkit-text-stroke: 2px var(--black); paint-order: stroke fill; text-shadow: 3px 3px 0 var(--crimson); letter-spacing: 0.3em; margin-top: 18px; position: relative; }
+    .d-foot  { display: flex; align-items: center; gap: 12px; margin-top: 18px; position: relative; }
+    .d-foot span.r { width: 42px; height: 2px; background: var(--gold); }
+    .d-foot span.t { font-family: 'Marcellus SC', serif; font-size: 0.78rem; letter-spacing: 0.45em; color: var(--text); text-transform: uppercase; text-shadow: 1px 1px 0 var(--black); }
+  </style>
+</head>
+<body>
+
+  <!-- ─ A — Sticker Pop Magical-Girl: zig-zag, scattered hearts/stars ─ -->
+  <div class="card card-a" id="card-a">
+    <span class="a-scatter a-s1">♥</span>
+    <span class="a-scatter a-s2">✦</span>
+    <span class="a-scatter a-s3">★</span>
+    <span class="a-scatter a-s4">♡</span>
+    <span class="a-scatter a-s5">✦</span>
+    <span class="a-scatter a-s6">★</span>
+    <div class="a-tag">★ PRISMA☆ILLYA ★</div>
+    <div class="a-row">
+      <div class="a-hero1">Chloe</div>
+      <div class="a-amp">&amp;</div>
+      <div class="a-hero2">Kuro</div>
+    </div>
+    <div class="a-en">Chloe von Einzbern</div>
+  </div>
+
+  <!-- ─ B — Editorial Italic Serif: vertical 黒 kanji split ─ -->
+  <div class="card card-b" id="card-b">
+    <div class="b-left">
+      <div class="b-kana">くろ</div>
+      <div class="b-kanji">黒</div>
+    </div>
+    <div class="b-rule"></div>
+    <div class="b-right">
+      <div class="b-hero">Chloe</div>
+      <div class="b-sub">von Einzbern</div>
+      <div class="b-class">Class Card · Archer</div>
+      <div class="b-tag">Prisma ☆ Illya</div>
+    </div>
+  </div>
+
+  <!-- ─ C — Sticker Pop Badge (PRISMA☆KURO, Illya show-title style) ─ -->
+  <div class="card card-c" id="card-c">
+    <div class="c-badge">MAGICAL ☆ GIRL</div>
+    <div class="c-row">
+      <div class="c-hero">PRISMA</div>
+      <div class="c-star">☆</div>
+      <div class="c-hero">KURO</div>
+    </div>
+    <div class="c-kana">クロエ・フォン・アインツベルン</div>
+    <div class="c-en">CHLOE&nbsp;&nbsp;VON&nbsp;&nbsp;EINZBERN</div>
+    <div class="c-deco">★ ♡ ★</div>
+  </div>
+
+  <!-- ─ D — Chrome Display + 黒 Kanji Watermark ─ -->
+  <div class="card card-d" id="card-d">
+    <div class="d-watermark">黒</div>
+    <div class="d-furi">Kuro · Fate/kaleid</div>
+    <div class="d-hero">Chloe</div>
+    <div class="d-kata">クロエ・フォン・アインツベルン</div>
+    <div class="d-foot"><span class="r"></span><span class="t">Archer</span><span class="r"></span></div>
+  </div>
+
+</body>
+</html>

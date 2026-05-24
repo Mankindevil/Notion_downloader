@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>フリーレン · Live2D 风格预览</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: radial-gradient(ellipse at center, #1a2030 0%, #060810 100%);
+    color: #cfd6df;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif; }
+
+  .stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    perspective: 1800px;
+  }
+  .scene {
+    position: relative;
+    width: min(92vw, calc(92vh * (2432/1664)));
+    aspect-ratio: 2432 / 1664;
+    transform-style: preserve-3d;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #6ab4e8;
+  }
+  .layer {
+    position: absolute; inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    will-change: transform;
+    transform-origin: center 60%;
+  }
+  /* Distinct transform origins for each layer's secondary motion */
+  .l-sky    { background-image: url('layers_output/1_sky.png');   z-index: 1; transform-origin: center; }
+  .l-cloud  { background-image: url('layers_output/2_cloud.png'); z-index: 2; transform-origin: center; }
+  .l-body   { background-image: url('layers_output/3_body.png');  z-index: 3; transform-origin: 50% 100%; }
+  .l-hair   { background-image: url('layers_output/4_hair.png');  z-index: 4; transform-origin: 52% 50%; }
+  .l-face   { background-image: url('layers_output/5_face.png');  z-index: 5; transform-origin: 52% 56%; }
+
+  /* HUD */
+  .hud {
+    position: fixed; left: 16px; top: 14px;
+    background: rgba(12,16,22,0.78); backdrop-filter: blur(8px);
+    border: 1px solid #1d2733; border-radius: 12px;
+    padding: 14px 16px; font-size: 13px; line-height: 1.55;
+    min-width: 260px;
+  }
+  .hud h1 { margin: 0 0 8px; font-size: 14px; color: #fff; font-weight: 600;
+    display: flex; align-items: center; gap: 6px; }
+  .hud h1 .badge { font-size: 10px; padding: 2px 6px; border-radius: 999px;
+    background: linear-gradient(135deg, #58a6ff, #a371f7); color: #fff;
+    font-weight: 700; letter-spacing: 0.5px; }
+  .ctrl { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px;
+    margin-top: 8px; align-items: center; }
+  .ctrl label { color: #8593a4; font-size: 12px; }
+  .ctrl input[type=range] { grid-column: 1 / 3; width: 100%; }
+  .ctrl .val { color: #8fb6e2; font-variant-numeric: tabular-nums; font-size: 12px; text-align: right; }
+  .toggles { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .toggles label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #cfd6df; }
+  .toggles input { accent-color: #58a6ff; }
+  .tip { margin-top: 10px; color: #6f7a87; font-size: 11.5px; line-height: 1.4; }
+
+  .legend {
+    position: fixed; right: 16px; top: 14px;
+    background: rgba(12,16,22,0.78); border: 1px solid #1d2733;
+    border-radius: 12px; padding: 12px 14px; font-size: 12.5px;
+    backdrop-filter: blur(8px);
+  }
+  .legend h2 { margin: 0 0 6px; font-size: 12px; color: #8fb6e2; font-weight: 600;
+    letter-spacing: 0.5px; text-transform: uppercase; }
+  .legend .row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+  .legend .name { color: #cfd6df; min-width: 60px; }
+  .legend .desc { color: #6f7a87; font-size: 11px; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="scene" id="scene">
+      <div class="layer l-sky"   id="layerSky"></div>
+      <div class="layer l-cloud" id="layerCloud"></div>
+      <div class="layer l-body"  id="layerBody"></div>
+      <div class="layer l-hair"  id="layerHair"></div>
+      <div class="layer l-face"  id="layerFace"></div>
+    </div>
+  </div>
+
+  <div class="hud">
+    <h1>フリーレン <span class="badge">LIVE2D-style</span></h1>
+    <div class="ctrl">
+      <label>视差强度</label><span class="val" id="parallaxVal">1.0×</span>
+      <input type="range" id="parallax" min="0" max="3" step="0.05" value="1">
+      <label>呼吸幅度</label><span class="val" id="breathVal">1.0×</span>
+      <input type="range" id="breath" min="0" max="3" step="0.05" value="1">
+      <label>头发摆动</label><span class="val" id="swayVal">1.0×</span>
+      <input type="range" id="sway" min="0" max="3" step="0.05" value="1">
+    </div>
+    <div class="toggles">
+      <label><input type="checkbox" id="tilt" checked>场景倾斜</label>
+      <label><input type="checkbox" id="track" checked>视线追随鼠标</label>
+      <label><input type="checkbox" id="autoIdle">自动空闲（鼠标离开屏幕时）</label>
+    </div>
+    <div class="tip">脸/头发/身体/云/天空 各有独立运动。<br>移动鼠标 → 头部和身体微转；停留 → 持续呼吸 + 发丝飘动。</div>
+  </div>
+
+  <div class="legend">
+    <h2>5 LAYERS · BACK → FRONT</h2>
+    <div class="row"><span class="name">L1 天空</span><span class="desc">慢速漂移</span></div>
+    <div class="row"><span class="name">L2 云</span><span class="desc">中速漂移 + 视差</span></div>
+    <div class="row"><span class="name">L3 身体</span><span class="desc">呼吸 + 视差</span></div>
+    <div class="row"><span class="name">L4 头发</span><span class="desc">摆动 + 跟随头部</span></div>
+    <div class="row"><span class="name">L5 脸</span><span class="desc">头部小幅转动</span></div>
+  </div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const scene = $('scene');
+  const layers = {
+    sky:   $('layerSky'),
+    cloud: $('layerCloud'),
+    body:  $('layerBody'),
+    hair:  $('layerHair'),
+    face:  $('layerFace'),
+  };
+
+  const parallaxEl = $('parallax'), breathEl = $('breath'), swayEl = $('sway');
+  const tiltEl = $('tilt'), trackEl = $('track'), autoIdleEl = $('autoIdle');
+  $('parallaxVal').textContent = (+parallaxEl.value).toFixed(2) + '×';
+  $('breathVal').textContent   = (+breathEl.value).toFixed(2)   + '×';
+  $('swayVal').textContent     = (+swayEl.value).toFixed(2)     + '×';
+  parallaxEl.oninput = () => $('parallaxVal').textContent = (+parallaxEl.value).toFixed(2) + '×';
+  breathEl.oninput   = () => $('breathVal').textContent   = (+breathEl.value).toFixed(2)   + '×';
+  swayEl.oninput     = () => $('swayVal').textContent     = (+swayEl.value).toFixed(2)     + '×';
+
+  // Per-layer parallax depth (back to front)
+  const DEPTH = { sky: 0.4, cloud: 1.2, body: 2.4, hair: 3.6, face: 4.4 };
+
+  // Target (driven by pointer) and current (smoothed) gaze positions in [-1, 1]
+  let tx = 0, ty = 0, gx = 0, gy = 0;
+  let pointerActive = false;
+  let lastPointerT = performance.now();
+
+  function setTarget(cx, cy) {
+    const w = window.innerWidth, h = window.innerHeight;
+    tx = (cx / w) * 2 - 1;
+    ty = (cy / h) * 2 - 1;
+    pointerActive = true;
+    lastPointerT = performance.now();
+  }
+  window.addEventListener('mousemove', e => setTarget(e.clientX, e.clientY));
+  window.addEventListener('touchmove', e => {
+    if (e.touches.length) setTarget(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  window.addEventListener('mouseleave', () => { pointerActive = false; });
+
+  const t0 = performance.now();
+  function tick() {
+    const now = performance.now();
+    const t = (now - t0) / 1000;
+
+    // Auto-idle: when no pointer activity for >2s, drift target along a slow Lissajous curve
+    if (autoIdleEl.checked && (!pointerActive || now - lastPointerT > 2000)) {
+      tx = Math.sin(t * 0.4) * 0.6;
+      ty = Math.sin(t * 0.27) * 0.3;
+    }
+
+    // Smooth gaze
+    gx += (tx - gx) * 0.07;
+    gy += (ty - gy) * 0.07;
+
+    const parallax = +parallaxEl.value;
+    const breathK  = +breathEl.value;
+    const swayK    = +swayEl.value;
+
+    // Breathing — slow sine on body (vertical scale) and small face vertical bob
+    const breath = Math.sin(t * 1.3) * 0.5 + 0.5;   // 0..1
+    const bodyScaleY = 1 + breath * 0.012 * breathK;
+    const bodyShiftY = -breath * 0.4 * breathK;     // tiny rise on inhale
+    const faceBobY   = -breath * 0.8 * breathK;
+
+    // Hair sway — two-frequency sine for organic motion
+    const sway = (Math.sin(t * 0.9) * 0.7 + Math.sin(t * 1.6 + 0.7) * 0.3) * swayK;
+    const hairOffsetX = sway * 0.8;   // % of scene width
+    const hairSkew    = sway * 0.6;   // degrees
+    const hairRot     = sway * 0.25;  // degrees, around head pivot
+
+    // Head turn (when tracking enabled, follows gaze; otherwise idle wobble)
+    const headK = trackEl.checked ? 1 : 0.35;
+    const headRotX =  gy * 3.5 * headK + Math.sin(t * 0.43) * 0.3;
+    const headRotY = -gx * 5.5 * headK + Math.sin(t * 0.37) * 0.4;
+    const headOffsetX = -gx * 0.9 * headK;
+    const headOffsetY = -gy * 0.6 * headK;
+
+    // Cloud drift — slow continuous horizontal motion
+    const cloudDrift = (t * 0.5) % 100 - 50;
+    const skyDrift   = (t * 0.15) % 100 - 50;
+
+    // Per-layer transforms
+    const px = -gx * parallax, py = -gy * parallax;
+
+    layers.sky.style.transform =
+      `translate3d(${px * DEPTH.sky + skyDrift * 0.05}%, ${py * DEPTH.sky}%, 0) scale(${1 + DEPTH.sky/100})`;
+
+    layers.cloud.style.transform =
+      `translate3d(${px * DEPTH.cloud + cloudDrift * 0.08}%, ${py * DEPTH.cloud}%, 0) scale(${1 + DEPTH.cloud/100})`;
+
+    layers.body.style.transform =
+      `translate3d(${px * DEPTH.body}%, ${py * DEPTH.body + bodyShiftY}%, 0) ` +
+      `scale(${1 + DEPTH.body/100}, ${bodyScaleY * (1 + DEPTH.body/100)})`;
+
+    layers.hair.style.transform =
+      `translate3d(${px * DEPTH.hair + hairOffsetX + headOffsetX}%, ${py * DEPTH.hair + headOffsetY}%, 0) ` +
+      `rotate(${hairRot + headRotY * 0.3}deg) skewX(${hairSkew}deg) scale(${1 + DEPTH.hair/100})`;
+
+    layers.face.style.transform =
+      `translate3d(${px * DEPTH.face + headOffsetX}%, ${py * DEPTH.face + headOffsetY + faceBobY}%, 0) ` +
+      `rotate(${headRotY * 0.35}deg) scale(${1 + DEPTH.face/100})`;
+
+    // Scene tilt
+    if (tiltEl.checked) {
+      const rx =  gy * 3;
+      const ry = -gx * 5;
+      scene.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+    } else {
+      scene.style.transform = 'none';
+    }
+
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+</script>
+</body>
+</html>

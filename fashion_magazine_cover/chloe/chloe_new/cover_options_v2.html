@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<!--
+  Chloe von Einzbern — cinematic movie-poster covers in Child Pornhub parody aesthetic.
+  Base image: chloe_clean.png (no baked-in masthead — full layout composed here).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chloe — Movie Poster × Child Pornhub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;700;800;900&family=Oswald:wght@400;500;700&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #1a1a1a; }
+    body {
+      display: flex; flex-wrap: wrap; gap: 40px; padding: 40px;
+      align-items: flex-start; justify-content: center;
+      font-family: 'Inter', sans-serif;
+    }
+    .cover-id {
+      position: absolute; top: -30px; left: 0;
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      color: rgba(255,255,255,0.55); letter-spacing: 0.18em;
+      z-index: 100; pointer-events: none; text-transform: uppercase;
+    }
+
+    .cover {
+      --cw: 1115; --ch: 1386;
+      --ink:    #ffffff;
+      --orange: #ff9000;
+      --black:  #0d0d0d;
+      --pink:   #ff6fa8;
+      --crimson: #8b1a3a;
+      --cover-img: url('chloe_clean.png');
+
+      width: calc(var(--cw) * 1px);
+      height: calc(var(--ch) * 1px);
+      position: relative; overflow: hidden;
+      isolation: isolate; color: var(--ink);
+    }
+    .cover > [data-layer] {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+    }
+    .cover > [data-layer="background"] { z-index: 1; }
+    .cover > [data-layer="effects"]    { z-index: 2; pointer-events: none; }
+    .cover > [data-layer="artwork"]    { z-index: 3; }
+
+    .bg-img {
+      position: absolute; inset: 0;
+      background-image: var(--cover-img);
+      background-size: cover;
+      background-position: var(--bg-pos, center 42%);
+      background-repeat: no-repeat;
+    }
+
+    /* ── Shared atmospheric FX (background layer) ─────────────────────── */
+    .fx-vignette {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at center,
+        rgba(0,0,0,0) 30%,
+        rgba(0,0,0,0.42) 82%,
+        rgba(0,0,0,0.72) 100%);
+      mix-blend-mode: multiply;
+    }
+    .fx-rim-light {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 55% 45% at 50% 18%,
+        rgba(255,220,180,0.28) 0%,
+        rgba(255,220,180,0) 62%);
+      mix-blend-mode: screen;
+    }
+    .fx-shade-top {
+      position: absolute; top: 0; left: 0; right: 0; height: 22%;
+      background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0));
+      pointer-events: none;
+    }
+    .fx-shade-bottom {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 38%;
+      background: linear-gradient(0deg, rgba(0,0,0,0.78), rgba(0,0,0,0.15) 70%, rgba(0,0,0,0));
+      pointer-events: none;
+    }
+    .fx-letterbox-top, .fx-letterbox-bottom {
+      position: absolute; left: 0; right: 0; height: 4.5%;
+      background: var(--black); pointer-events: none;
+    }
+    .fx-letterbox-top { top: 0; }
+    .fx-letterbox-bottom { bottom: 0; }
+
+    .cover.fx-grade-cinematic .bg-img {
+      filter: saturate(0.88) contrast(1.22) brightness(0.94);
+    }
+    .cover.fx-grade-warm .bg-img {
+      filter: saturate(1.08) contrast(1.10) brightness(1.02) sepia(0.06);
+    }
+    .cover.fx-grade-teal .bg-img {
+      filter: saturate(0.95) contrast(1.18) brightness(0.92) hue-rotate(-6deg);
+    }
+
+    /* ── Shared Pornhub masthead ───────────────────────────────────────── */
+    .ph-masthead {
+      position: absolute; top: 52px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; align-items: baseline; gap: 0;
+      white-space: nowrap;
+    }
+    .ph-child {
+      font-family: 'Anton', sans-serif;
+      font-size: 72px; letter-spacing: -0.02em;
+      color: var(--ink); text-transform: lowercase;
+      text-shadow: 4px 4px 0 var(--black);
+      line-height: 1;
+    }
+    .ph-brand {
+      font-family: 'Anton', sans-serif;
+      font-size: 72px; letter-spacing: -0.02em;
+      color: var(--ink); text-transform: lowercase;
+      text-shadow: 4px 4px 0 var(--black);
+      line-height: 1;
+    }
+    .ph-brand .hub {
+      display: inline-block;
+      background: var(--orange); color: var(--black);
+      padding: 2px 14px 6px; margin-left: 2px;
+      text-shadow: none;
+      box-shadow: 4px 4px 0 var(--black);
+    }
+
+    /* ── Shared barcode / issue ──────────────────────────────────────────── */
+    .barcode {
+      position: absolute; bottom: 28px; left: 32px;
+      display: flex; gap: 2px; height: 34px;
+    }
+    .barcode span { display: block; background: var(--ink); }
+    .bc-num {
+      position: absolute; bottom: 8px; left: 32px;
+      font-family: 'Inter', monospace; font-size: 9px;
+      letter-spacing: 0.28em; color: var(--ink); opacity: 0.85;
+    }
+    .iss-stack {
+      position: absolute; bottom: 28px; right: 32px;
+      font-family: 'Anton', sans-serif; font-size: 11px;
+      letter-spacing: 0.28em; color: var(--ink);
+      line-height: 1.65; text-align: right; text-transform: uppercase;
+      text-shadow: 1px 1px 0 var(--black);
+    }
+
+    /* ── Hearts / sparkles (effects layer) ─────────────────────────────── */
+    .heart, .spark {
+      position: absolute; pointer-events: none; line-height: 1;
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       VARIANT A — Blockbuster one-sheet (primary)
+       ════════════════════════════════════════════════════════════════════ */
+    #cover-a .now-playing {
+      position: absolute; top: 148px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Oswald', sans-serif; font-size: 15px;
+      letter-spacing: 0.55em; color: var(--orange);
+      text-transform: uppercase;
+      text-shadow: 2px 2px 0 var(--black);
+    }
+    #cover-a .movie-title {
+      position: absolute; bottom: 200px; left: 50%;
+      transform: translateX(-50%);
+      text-align: center; width: 92%;
+    }
+    #cover-a .movie-title .line1 {
+      font-family: 'Anton', sans-serif;
+      font-size: 88px; letter-spacing: 0.06em;
+      color: var(--ink); text-transform: uppercase;
+      text-shadow: 5px 5px 0 var(--black);
+      line-height: 0.92;
+    }
+    #cover-a .movie-title .line2 {
+      font-family: 'Anton', sans-serif;
+      font-size: 88px; letter-spacing: 0.06em;
+      color: var(--orange); text-transform: uppercase;
+      text-shadow: 5px 5px 0 var(--black);
+      line-height: 0.92;
+    }
+    #cover-a .tagline {
+      position: absolute; bottom: 148px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Cormorant Garamond', serif; font-style: italic;
+      font-size: 26px; color: var(--ink);
+      text-shadow: 2px 2px 0 var(--black);
+      letter-spacing: 0.04em;
+    }
+    #cover-a .credits {
+      position: absolute; bottom: 96px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Oswald', sans-serif; font-size: 11px;
+      letter-spacing: 0.38em; color: rgba(255,255,255,0.75);
+      text-transform: uppercase; text-align: center;
+      line-height: 1.8;
+    }
+    #cover-a .vol-pill {
+      position: absolute; top: 188px; right: 36px;
+      background: var(--orange); color: var(--black);
+      font-family: 'Anton', sans-serif; font-size: 28px;
+      letter-spacing: 0.1em; padding: 5px 16px 7px;
+      text-transform: uppercase;
+      box-shadow: 4px 4px 0 var(--black);
+      transform: rotate(-3deg);
+    }
+    #cover-a .rating-badge {
+      position: absolute; top: 188px; left: 36px;
+      border: 3px solid var(--orange); color: var(--orange);
+      font-family: 'Anton', sans-serif; font-size: 22px;
+      padding: 6px 12px 8px; letter-spacing: 0.08em;
+      text-shadow: 2px 2px 0 var(--black);
+      transform: rotate(2deg);
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       VARIANT B — Premium edition (magazine × trailer card)
+       ════════════════════════════════════════════════════════════════════ */
+    #cover-b .cl-stack {
+      position: absolute; right: 30px; top: 34%;
+      display: flex; flex-direction: column; gap: 20px;
+      max-width: 340px; text-align: right;
+    }
+    #cover-b .cl-h {
+      font-family: 'Anton', sans-serif;
+      font-size: 36px; letter-spacing: 0.04em;
+      color: var(--ink); line-height: 1;
+      text-transform: uppercase;
+      text-shadow: 3px 3px 0 var(--black);
+    }
+    #cover-b .cl-h.accent { color: var(--orange); }
+    #cover-b .cl-tag {
+      display: inline-block; margin-top: 8px;
+      background: var(--black); color: var(--orange);
+      font-family: 'Anton', sans-serif; font-size: 13px;
+      padding: 4px 10px 5px; letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    #cover-b .sig {
+      position: absolute; bottom: 118px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; align-items: baseline; gap: 14px;
+    }
+    #cover-b .sig-name {
+      font-family: 'Anton', sans-serif; font-size: 92px;
+      letter-spacing: -0.02em; color: var(--ink);
+      text-transform: uppercase; line-height: 0.9;
+      text-shadow: 5px 5px 0 var(--black);
+    }
+    #cover-b .sig-name .x {
+      background: var(--orange); color: var(--black);
+      padding: 3px 11px 5px; font-size: 92px;
+      text-shadow: none; display: inline-block;
+      box-shadow: 4px 4px 0 var(--black);
+    }
+    #cover-b .sig-tag {
+      font-family: 'Cormorant Garamond', serif; font-style: italic;
+      font-size: 21px; color: var(--ink);
+      text-shadow: 2px 2px 0 var(--black);
+    }
+    #cover-b .discretion {
+      position: absolute; bottom: 72px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Anton', sans-serif; font-size: 13px;
+      letter-spacing: 0.38em; color: var(--orange);
+      text-transform: uppercase;
+      text-shadow: 2px 2px 0 var(--black);
+    }
+    #cover-b .vol-pill {
+      position: absolute; top: 148px; right: 34px;
+      background: var(--orange); color: var(--black);
+      font-family: 'Anton', sans-serif; font-size: 30px;
+      letter-spacing: 0.08em; padding: 5px 16px 7px;
+      text-transform: uppercase;
+      box-shadow: 4px 4px 0 var(--black);
+      transform: rotate(-2deg);
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       VARIANT C — Teal noir cinematic
+       ════════════════════════════════════════════════════════════════════ */
+    #cover-c .ph-masthead { top: 58px; }
+    #cover-c .hero-stack {
+      position: absolute; left: 32px; bottom: 180px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    #cover-c .hero-stack .eyebrow {
+      font-family: 'Oswald', sans-serif; font-size: 14px;
+      letter-spacing: 0.48em; color: var(--orange);
+      text-transform: uppercase;
+    }
+    #cover-c .hero-stack .hero {
+      font-family: 'Playfair Display', serif; font-style: italic;
+      font-weight: 900; font-size: 64px; line-height: 0.95;
+      color: var(--ink);
+      text-shadow: 4px 4px 0 var(--black);
+    }
+    #cover-c .hero-stack .hero em {
+      font-style: italic; color: var(--orange);
+    }
+    #cover-c .hero-stack .sub {
+      font-family: 'Cormorant Garamond', serif; font-style: italic;
+      font-size: 22px; color: rgba(255,255,255,0.88);
+      margin-top: 8px;
+    }
+    #cover-c .release-strip {
+      position: absolute; bottom: 88px; left: 32px; right: 32px;
+      border-top: 2px solid var(--orange);
+      padding-top: 14px;
+      display: flex; justify-content: space-between; align-items: flex-end;
+    }
+    #cover-c .release-strip .date {
+      font-family: 'Anton', sans-serif; font-size: 42px;
+      color: var(--orange); letter-spacing: 0.06em;
+      text-shadow: 3px 3px 0 var(--black);
+    }
+    #cover-c .release-strip .studio {
+      font-family: 'Oswald', sans-serif; font-size: 11px;
+      letter-spacing: 0.32em; color: rgba(255,255,255,0.7);
+      text-align: right; line-height: 1.7;
+      text-transform: uppercase;
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       VARIANT D — Vertical title rail (landscape-mag energy, portrait canvas)
+       ════════════════════════════════════════════════════════════════════ */
+    #cover-d .side-rail {
+      position: absolute; left: 0; top: 0; bottom: 0; width: 72px;
+      background: var(--black);
+      display: flex; align-items: center; justify-content: center;
+      border-right: 4px solid var(--orange);
+    }
+    #cover-d .side-rail span {
+      writing-mode: vertical-rl; transform: rotate(180deg);
+      font-family: 'Anton', sans-serif; font-size: 28px;
+      letter-spacing: 0.35em; color: var(--orange);
+      text-transform: uppercase;
+    }
+    #cover-d .ph-masthead {
+      top: 48px; left: calc(72px + 50% - 36px);
+    }
+    #cover-d .poster-block {
+      position: absolute; right: 28px; bottom: 160px;
+      max-width: 420px; text-align: right;
+    }
+    #cover-d .poster-block .big {
+      font-family: 'Anton', sans-serif;
+      font-size: 52px; line-height: 0.95;
+      color: var(--ink); text-transform: uppercase;
+      text-shadow: 4px 4px 0 var(--black);
+    }
+    #cover-d .poster-block .big .o { color: var(--orange); }
+    #cover-d .poster-block .small {
+      margin-top: 12px;
+      font-family: 'Oswald', sans-serif; font-size: 13px;
+      letter-spacing: 0.42em; color: var(--orange);
+      text-transform: uppercase;
+    }
+    #cover-d .star-name {
+      position: absolute; bottom: 88px; left: 88px;
+      font-family: 'Anton', sans-serif; font-size: 78px;
+      color: var(--ink); text-transform: uppercase;
+      text-shadow: 5px 5px 0 var(--black);
+      line-height: 0.9;
+    }
+    #cover-d .star-name .hub {
+      background: var(--orange); color: var(--black);
+      padding: 2px 10px 4px; box-shadow: 3px 3px 0 var(--black);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- A: Blockbuster one-sheet ─────────────────────────────────────────── -->
+  <div class="cover fx-grade-cinematic" id="cover-a">
+    <div class="cover-id">A — Blockbuster One-Sheet</div>
+    <div data-layer="background">
+      <div class="bg-img"></div>
+      <div class="fx-vignette"></div>
+      <div class="fx-rim-light"></div>
+      <div class="fx-shade-top"></div>
+      <div class="fx-shade-bottom"></div>
+      <div class="fx-letterbox-top"></div>
+      <div class="fx-letterbox-bottom"></div>
+    </div>
+    <div data-layer="effects">
+      <div class="heart" style="top:260px;right:60px;font-size:26px;color:#ff9000;transform:rotate(-14deg)">♥</div>
+      <div class="heart" style="top:48%;left:40px;font-size:22px;color:#ff6fa8;transform:rotate(10deg)">♥</div>
+      <div class="heart" style="bottom:42%;right:320px;font-size:20px;color:#ff9000;transform:rotate(18deg)">♥</div>
+      <div class="spark" style="top:320px;left:50px;font-size:18px;color:#fff;opacity:0.6">✦</div>
+      <div class="spark" style="bottom:35%;right:80px;font-size:16px;color:#ff9000;opacity:0.8">★</div>
+    </div>
+    <div data-layer="artwork">
+      <div class="ph-masthead">
+        <span class="ph-child">child</span>
+        <span class="ph-brand">porn<span class="hub">hub</span></span>
+      </div>
+      <div class="now-playing">★ Now Playing ★</div>
+      <div class="rating-badge">PG-13</div>
+      <div class="vol-pill">PREMIUM</div>
+      <div class="movie-title">
+        <div class="line1">KALEID</div>
+        <div class="line2">CHLOE</div>
+      </div>
+      <div class="tagline">She wanted the Grail. She got the spotlight.</div>
+      <div class="credits">
+        A TYPE-MOON × KALEID LINER PRODUCTION<br>
+        DIRECTED BY ILIYA · IN THEATERS MAY 2026
+      </div>
+      <div class="barcode">
+        <span style="width:3px"></span><span style="width:1.5px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span>
+      </div>
+      <div class="bc-num">4 901234 567890</div>
+      <div class="iss-stack">VOL 18<br>MAY 26<br>¥980</div>
+    </div>
+  </div>
+
+  <!-- B: Premium edition ───────────────────────────────────────────────── -->
+  <div class="cover fx-grade-warm" id="cover-b">
+    <div class="cover-id">B — Premium Edition</div>
+    <div data-layer="background">
+      <div class="bg-img"></div>
+      <div class="fx-vignette"></div>
+      <div class="fx-rim-light"></div>
+      <div class="fx-shade-top"></div>
+      <div class="fx-shade-bottom"></div>
+    </div>
+    <div data-layer="effects">
+      <div class="heart" style="top:230px;right:68px;font-size:28px;color:#ff9000;transform:rotate(-12deg)">♥</div>
+      <div class="heart" style="top:50%;left:32px;font-size:24px;color:#0d0d0d;transform:rotate(8deg)">♥</div>
+      <div class="heart" style="bottom:38%;right:360px;font-size:22px;color:#ff9000;transform:rotate(20deg)">♥</div>
+      <div class="heart" style="bottom:30%;left:44px;font-size:18px;color:#ff6fa8;transform:rotate(-18deg)">♥</div>
+    </div>
+    <div data-layer="artwork">
+      <div class="ph-masthead">
+        <span class="ph-child">child</span>
+        <span class="ph-brand">porn<span class="hub">hub</span></span>
+      </div>
+      <div class="vol-pill">VOL 18<span style="font-size:18px;margin-left:8px;opacity:0.8">¥980</span></div>
+      <div class="cl-stack">
+        <div>
+          <div class="cl-h accent">PREMIUM</div>
+          <div class="cl-h">EDITION</div>
+          <div class="cl-tag">TRAILER · PG 24</div>
+        </div>
+        <div>
+          <div class="cl-h">KALEID</div>
+          <div class="cl-h">EXCLUSIVE</div>
+          <div class="cl-tag">FEATURE · PG 60</div>
+        </div>
+      </div>
+      <div class="sig">
+        <div class="sig-name">CHLOE<span class="x">×</span></div>
+        <div class="sig-tag">spring kaleid issue</div>
+      </div>
+      <div class="discretion">★ VIEWER DISCRETION ADVISED ★</div>
+      <div class="barcode">
+        <span style="width:3px"></span><span style="width:1.5px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span>
+      </div>
+      <div class="bc-num">4 901234 567890</div>
+      <div class="iss-stack">VOL 18<br>MAY 26<br>¥980</div>
+    </div>
+  </div>
+
+  <!-- C: Teal noir cinematic ───────────────────────────────────────────── -->
+  <div class="cover fx-grade-teal" id="cover-c">
+    <div class="cover-id">C — Teal Noir Cinematic</div>
+    <div data-layer="background">
+      <div class="bg-img" style="--bg-pos: center 38%"></div>
+      <div class="fx-vignette"></div>
+      <div class="fx-shade-top"></div>
+      <div class="fx-shade-bottom"></div>
+    </div>
+    <div data-layer="effects">
+      <div class="spark" style="top:180px;right:100px;font-size:14px;color:#ff9000;opacity:0.7">✦</div>
+      <div class="heart" style="bottom:50%;right:40px;font-size:20px;color:#ff6fa8;transform:rotate(-8deg)">♥</div>
+    </div>
+    <div data-layer="artwork">
+      <div class="ph-masthead">
+        <span class="ph-child">child</span>
+        <span class="ph-brand">porn<span class="hub">hub</span></span>
+      </div>
+      <div class="hero-stack">
+        <div class="eyebrow">The Feature Presentation</div>
+        <div class="hero">Chloe<br><em>von Einzbern</em></div>
+        <div class="sub">An epic of magic, mischief &amp; main-character energy</div>
+      </div>
+      <div class="release-strip">
+        <div class="date">05·26</div>
+        <div class="studio">
+          KALEID LINER STUDIOS<br>
+          WORLD PREMIERE · TOKYO
+        </div>
+      </div>
+      <div class="barcode">
+        <span style="width:3px"></span><span style="width:1.5px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span>
+      </div>
+      <div class="bc-num">4 901234 567890</div>
+      <div class="iss-stack">CINEMA<br>ISSUE<br>¥980</div>
+    </div>
+  </div>
+
+  <!-- D: Side-rail poster ──────────────────────────────────────────────── -->
+  <div class="cover fx-grade-cinematic" id="cover-d">
+    <div class="cover-id">D — Side-Rail Poster</div>
+    <div data-layer="background">
+      <div class="bg-img" style="--bg-pos: center 40%"></div>
+      <div class="fx-vignette"></div>
+      <div class="fx-rim-light"></div>
+      <div class="fx-shade-bottom"></div>
+    </div>
+    <div data-layer="effects">
+      <div class="heart" style="top:40%;right:50px;font-size:24px;color:#ff9000;transform:rotate(12deg)">♥</div>
+      <div class="spark" style="top:280px;left:100px;font-size:16px;color:#fff;opacity:0.5">★</div>
+    </div>
+    <div data-layer="artwork">
+      <div class="side-rail"><span>Now Showing</span></div>
+      <div class="ph-masthead">
+        <span class="ph-child">child</span>
+        <span class="ph-brand">porn<span class="hub">hub</span></span>
+      </div>
+      <div class="poster-block">
+        <div class="big">THE<br><span class="o">KALEID</span><br>MOVIE</div>
+        <div class="small">★ Starring Chloe ★</div>
+      </div>
+      <div class="star-name">CHLOE<span class="hub">×</span></div>
+      <div class="barcode" style="left:88px">
+        <span style="width:3px"></span><span style="width:1.5px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:3px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span><span style="width:1px"></span><span style="width:2px"></span><span style="width:1px"></span><span style="width:2.5px"></span><span style="width:1.5px"></span>
+      </div>
+      <div class="bc-num" style="left:88px">4 901234 567890</div>
+      <div class="iss-stack">MAY 26<br>¥980</div>
+    </div>
+  </div>
+
+  <script>
+    (function applyOrientations() {
+      document.querySelectorAll('.cover').forEach(function (el) {
+        var cs = getComputedStyle(el);
+        var cw = parseFloat(cs.getPropertyValue('--cw')) || el.offsetWidth;
+        var ch = parseFloat(cs.getPropertyValue('--ch')) || el.offsetHeight;
+        var ratio = cw / ch;
+        el.classList.remove('landscape', 'portrait', 'square');
+        if (Math.abs(ratio - 1) < 0.05) el.classList.add('square');
+        else if (ratio > 1) el.classList.add('landscape');
+        else el.classList.add('portrait');
+      });
+    })();
+  </script>
+</body>
+</html>

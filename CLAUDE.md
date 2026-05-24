@@ -17,15 +17,16 @@ No test suite exists. Testing is done by running the scripts against live URLs a
 
 ### notion_downloader.py
 
-Selenium-based scraper for a Notion gallery page. Single-file, 1,191 lines.
+CloakBrowser/Playwright-based scraper for a Notion gallery page. Single-file. Uses CloakBrowser (a stealth Playwright drop-in) so Cloudflare / FingerprintJS / reCAPTCHA v3 don't block the scrape; persistent profile under `<out>/.cloak-profile/` keeps cookies between runs.
 
 ```powershell
-# dependency
-.\.venv\Scripts\pip.exe install selenium   # also requires Chrome/Chromium
+# dependency — auto-downloads the ~200 MB stealth Chromium binary on first run
+.\.venv\Scripts\pip.exe install cloakbrowser
 
 .\.venv\Scripts\python.exe notion_downloader.py
 .\.venv\Scripts\python.exe notion_downloader.py --url "https://your.notion.site/…" --out my_gallery
-.\.venv\Scripts\python.exe notion_downloader.py --no-headless   # show browser for debugging
+.\.venv\Scripts\python.exe notion_downloader.py --no-headless        # show browser for debugging
+.\.venv\Scripts\python.exe notion_downloader.py --profile-dir ./pf   # custom persistent profile
 ```
 
 **Execution path:** `main()` → `scrape_gallery()` scrolls the page and collects all gallery cards → per-card `scrape_subpage()` extracts title/date/images → `write_entry_readme()` → global `README.md` + `index.html`.

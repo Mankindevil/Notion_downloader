@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wedding Illya — Magazine Covers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;0,6..96,900;1,6..96,400;1,6..96,700;1,6..96,900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,700;0,900;1,300;1,400;1,500;1,700;1,900&family=Italianno&family=Marcellus+SC&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@400;700;900&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Great+Vibes&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #1a1a1a; }
+    body {
+      display: flex; flex-wrap: wrap; gap: 44px; padding: 44px;
+      align-items: flex-start; justify-content: center;
+    }
+    .cover-wrap { position: relative; }
+    .cover-id {
+      position: absolute; top: -26px; left: 0;
+      font-family: monospace; font-size: 12px;
+      color: rgba(255,255,255,0.45); letter-spacing: 0.18em;
+    }
+
+    /* ─── Canvas + layers ─────────────────────────────────────────── */
+    .cover {
+      --cw: 1151; --ch: 1400;
+      --ink:    #ffffff;
+      --accent: #e8c9a0;      /* warm ivory-gold — reads on pink bg */
+      --paper:  #fff8f0;      /* ivory paper shadow */
+      --shade:  rgba(160,20,60,0.28); /* rose-tinted shade, NOT black */
+      --font-display:     'Italianno', cursive;
+      --font-script:      'Great Vibes', cursive;
+      --font-hero:        'Bodoni Moda', serif;
+      --font-serif:       'Cormorant Garamond', serif;
+      --font-cjk:         'Noto Serif SC', serif;
+      --font-sans-display:'Anton', sans-serif;
+      --font-smallcaps:   'Marcellus SC', serif;
+      --cover-img:        url('../illya.png');
+      --bg-pos:           center;
+      width:  calc(var(--cw) * 1px);
+      height: calc(var(--ch) * 1px);
+      position: relative; overflow: hidden; isolation: isolate;
+      color: var(--ink);
+    }
+    .cover > [data-layer] { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .cover > [data-layer="background"] { z-index: 1; }
+    .cover > [data-layer="effects"]    { z-index: 2; pointer-events: none; }
+    .cover > [data-layer="artwork"]    { z-index: 3; }
+    .bg-img {
+      position: absolute; inset: 0;
+      background-image: var(--cover-img);
+      background-size: cover;
+      background-position: var(--bg-pos);
+      background-repeat: no-repeat;
+    }
+
+    /* ─── Atmospheric effects ─────────────────────────────────────── */
+    /* Pink-tinted vignette — harmonises with the hot-pink bg */
+    .fx-vignette-rose {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 85% 80% at 50% 50%,
+        rgba(0,0,0,0) 32%,
+        rgba(140,10,55,0.22) 72%,
+        rgba(100,0,40,0.40) 100%);
+      mix-blend-mode: multiply;
+    }
+    /* Classic dark vignette for brutalist cover only */
+    .fx-vignette {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at center,
+        rgba(0,0,0,0) 30%, rgba(0,0,0,0.30) 80%, rgba(0,0,0,0.55) 100%);
+      mix-blend-mode: multiply;
+    }
+    /* Bridal rim — cool white from upper-right (veil light source) */
+    .fx-rim-bridal {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 55% 45% at 72% 18%,
+        rgba(255,252,248,0.38) 0%, rgba(255,252,248,0) 65%);
+      mix-blend-mode: screen;
+    }
+    /* Pinkish gradient top band — gives legibility over the hot-pink bg */
+    .fx-top-band {
+      position: absolute; top: 0; left: 0; right: 0; height: 30%;
+      background: linear-gradient(180deg,
+        rgba(160,15,55,0.50) 0%,
+        rgba(160,15,55,0.12) 70%,
+        rgba(0,0,0,0) 100%);
+      pointer-events: none;
+    }
+    /* Softer bottom band */
+    .fx-bottom-band {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 26%;
+      background: linear-gradient(0deg,
+        rgba(140,10,50,0.45) 0%,
+        rgba(0,0,0,0) 100%);
+      pointer-events: none;
+    }
+
+    /* ─── Effects-layer decorations ──────────────────────────────── */
+    .petal {
+      position: absolute; pointer-events: none;
+      mix-blend-mode: screen;
+      filter: drop-shadow(0 0 6px rgba(255,200,220,0.7));
+      opacity: 0.82;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       COVER A — 花嫁 / Voile
+       Bilingual bridal character-mag. The Fate/kaleid wedding issue.
+       CJK: 花嫁 (hanayome, bride). English: Voile (French: veil).
+       Dateline & coverlines speak the language of a fictional
+       Einzbern ceremonial-fashion publication.
+       ═══════════════════════════════════════════════════════════════ */
+
+    /* CJK masthead — stacked 花/嫁 top-left, serif 900 */
+    .a-cjk {
+      position: absolute;
+      top: calc(var(--ch) * 0.028px);
+      left: calc(var(--cw) * 0.052px);
+      font-family: var(--font-cjk); font-weight: 900;
+      font-size: calc(var(--ch) * 0.060px); line-height: 0.93;
+      letter-spacing: 0.06em;
+    }
+    /* Italianno script title top-right — very large, the heart of the cover */
+    .a-voile {
+      position: absolute;
+      top: calc(var(--ch) * 0.014px);
+      right: calc(var(--cw) * 0.046px);
+      font-family: var(--font-display);
+      font-size: calc(var(--ch) * 0.148px); line-height: 0.88;
+      text-align: right; letter-spacing: -0.01em;
+    }
+    .a-sub {
+      position: absolute;
+      top: calc(var(--ch) * 0.178px);
+      right: calc(var(--cw) * 0.050px);
+      font-family: var(--font-serif); font-style: italic; font-weight: 300;
+      font-size: calc(var(--ch) * 0.013px); letter-spacing: 0.28em; opacity: 0.9;
+    }
+    .a-dateline {
+      position: absolute;
+      top: calc(var(--ch) * 0.200px);
+      left: calc(var(--cw) * 0.052px);
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.0105px); line-height: 1.65;
+      letter-spacing: 0.22em; opacity: 0.88;
+    }
+    /* Thin gold rule under the dateline band */
+    .a-rule {
+      position: absolute;
+      top: calc(var(--ch) * 0.235px);
+      left: calc(var(--cw) * 0.052px);
+      width: calc(var(--cw) * 0.26px); height: 1px;
+      background: var(--accent); opacity: 0.65;
+    }
+    /* Circular vow badge */
+    .a-badge {
+      position: absolute;
+      top: calc(var(--ch) * 0.255px);
+      left: calc(var(--cw) * 0.052px);
+      width: calc(var(--ch) * 0.070px); height: calc(var(--ch) * 0.070px);
+      border-radius: 50%; border: 1.2px solid var(--accent);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--accent); text-align: center; padding: 5px;
+    }
+    .a-badge .sym  { font-size: calc(var(--ch) * 0.018px); line-height: 1; }
+    .a-badge .word { font-family: var(--font-smallcaps);
+                     font-size: calc(var(--ch) * 0.0072px); letter-spacing: 0.08em;
+                     line-height: 1.3; margin-top: 4px; }
+    /* Vertical editorial tag on the left margin */
+    .a-vert {
+      position: absolute;
+      top: calc(var(--ch) * 0.355px);
+      left: calc(var(--cw) * 0.055px);
+      writing-mode: vertical-rl;
+      font-family: var(--font-serif); font-style: italic; font-weight: 300;
+      font-size: calc(var(--ch) * 0.018px); letter-spacing: 0.14em;
+      color: var(--accent);
+    }
+    /* Cover lines */
+    .a-cl { position: absolute; }
+    .a-cl-h {
+      font-family: var(--font-serif); font-style: italic; font-weight: 700;
+      font-size: calc(var(--ch) * 0.026px); line-height: 1.05; margin-bottom: 5px;
+    }
+    .a-cl-sub {
+      font-family: var(--font-serif); font-weight: 300;
+      font-size: calc(var(--ch) * 0.0108px); line-height: 1.45; opacity: 0.88;
+    }
+    /* Right side, upper — white space beside the veil */
+    .a-cl-r1 { top: calc(var(--ch) * 0.265px); right: calc(var(--cw) * 0.044px); text-align: right; max-width: calc(var(--cw) * 0.30px); }
+    /* Right side, lower */
+    .a-cl-r2 { top: calc(var(--ch) * 0.430px); right: calc(var(--cw) * 0.044px); text-align: right; max-width: calc(var(--cw) * 0.30px); }
+    /* Left side, lower — beside the reclining figure */
+    .a-cl-l1 { bottom: calc(var(--ch) * 0.290px); left: calc(var(--cw) * 0.052px); max-width: calc(var(--cw) * 0.28px); }
+    /* Big script signature bottom-center */
+    .a-sig {
+      position: absolute;
+      bottom: calc(var(--ch) * 0.072px);
+      left: 50%; transform: translateX(-50%);
+      text-align: center; white-space: nowrap;
+    }
+    .a-sig-name {
+      font-family: var(--font-display);
+      font-size: calc(var(--ch) * 0.152px); line-height: 0.83;
+      text-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    }
+    .a-sig-sub {
+      font-family: var(--font-serif); font-style: italic; font-weight: 300;
+      font-size: calc(var(--ch) * 0.0135px); letter-spacing: 0.28em;
+      margin-top: 8px; opacity: 0.90;
+    }
+
+
+    /* ═══════════════════════════════════════════════════════════════
+       COVER B — VOILE  (High-Fashion Bridal Editorial)
+       "VOILE" in Bodoni 900 — reads like Vogue Brides.
+       Minimal, white, authoritative. The masthead IS the statement.
+       Accent: rose-gold (#e8b4a8) — warmer than generic gold, bridal.
+       ═══════════════════════════════════════════════════════════════ */
+    .b-masthead {
+      position: absolute;
+      top: calc(var(--ch) * 0.026px);
+      left: 0; right: 0; text-align: center;
+      font-family: 'Bodoni Moda', serif; font-weight: 900;
+      font-size: calc(var(--ch) * 0.170px); line-height: 1; letter-spacing: 0.06em;
+    }
+    .b-rule {
+      position: absolute; top: calc(var(--ch) * 0.214px);
+      left: calc(var(--cw) * 0.065px); right: calc(var(--cw) * 0.065px);
+      height: 1px; background: var(--ink); opacity: 0.70;
+    }
+    .b-dateline {
+      position: absolute; top: calc(var(--ch) * 0.220px);
+      left: 0; right: 0; text-align: center;
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.0108px); letter-spacing: 0.56em; opacity: 0.85;
+    }
+    /* Hero coverline — bottom left, italic Bodoni */
+    .b-hero {
+      position: absolute;
+      left: calc(var(--cw) * 0.065px);
+      bottom: calc(var(--ch) * 0.215px);
+      max-width: calc(var(--cw) * 0.52px);
+    }
+    .b-hero-h {
+      font-family: 'Bodoni Moda', serif; font-style: italic; font-weight: 700;
+      font-size: calc(var(--ch) * 0.054px); line-height: 0.94;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.30);
+    }
+    .b-hero-sub {
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.0108px); letter-spacing: 0.40em;
+      color: var(--accent); margin-top: 16px;
+    }
+    /* Supporting coverlines right side */
+    .b-cl { position: absolute; max-width: calc(var(--cw) * 0.27px); }
+    .b-cl-h {
+      font-family: 'Bodoni Moda', serif; font-weight: 700;
+      font-size: calc(var(--ch) * 0.020px); line-height: 1.05;
+    }
+    .b-cl-sub {
+      font-family: var(--font-serif); font-style: italic; font-weight: 300;
+      font-size: calc(var(--ch) * 0.011px); line-height: 1.45; opacity: 0.86; margin-top: 6px;
+    }
+    .b-cl-1 { top: calc(var(--ch) * 0.275px); right: calc(var(--cw) * 0.065px); text-align: right; }
+    .b-cl-2 { bottom: calc(var(--ch) * 0.110px); right: calc(var(--cw) * 0.065px); text-align: right; }
+    .b-issue {
+      position: absolute; bottom: calc(var(--ch) * 0.033px);
+      right: calc(var(--cw) * 0.065px);
+      font-family: var(--font-smallcaps); font-size: calc(var(--ch) * 0.0094px);
+      letter-spacing: 0.48em; opacity: 0.78;
+    }
+    .b-barcode {
+      position: absolute; bottom: calc(var(--ch) * 0.033px);
+      left: calc(var(--cw) * 0.065px); display: flex; gap: 2px;
+      height: calc(var(--ch) * 0.030px);
+    }
+    .b-barcode span { display: block; background: var(--ink); opacity: 0.80; }
+
+
+    /* ═══════════════════════════════════════════════════════════════
+       COVER C — Mariage  (Asian Fashion Glossy, Bridal Edition)
+       Japanese bridal magazine.  花嫁 sub-masthead.
+       Masthead: ivory/cream Playfair italic — not hot-pink-on-pink.
+       Petal decorations instead of generic sparkles.
+       Cover-line colors: blush (#f5b8cc), teal (#6ec4bb), rose-gold (#e8c4a0).
+       ═══════════════════════════════════════════════════════════════ */
+    .c-masthead {
+      position: absolute; top: calc(var(--ch) * 0.026px);
+      left: calc(var(--cw) * 0.054px);
+      font-family: var(--font-hero); font-weight: 900; font-style: italic;
+      font-size: calc(var(--ch) * 0.110px); line-height: 0.86;
+      /* ivory masthead with rose-gold shadow — not pink on pink */
+      color: #fff8f0;
+      text-shadow: 5px 5px 0 #e8c4a0, 9px 9px 0 rgba(200,100,120,0.35);
+    }
+    .c-sub-cjk {
+      position: absolute; top: calc(var(--ch) * 0.148px);
+      left: calc(var(--cw) * 0.060px);
+      font-family: var(--font-cjk); font-weight: 700;
+      font-size: calc(var(--ch) * 0.0195px); letter-spacing: 0.22em;
+    }
+    .c-sub-roman {
+      position: absolute; top: calc(var(--ch) * 0.177px);
+      left: calc(var(--cw) * 0.061px);
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.0090px); letter-spacing: 0.50em;
+      color: #f5b8cc;
+    }
+    /* Issue info — top right */
+    .c-issue {
+      position: absolute; top: calc(var(--ch) * 0.033px);
+      right: calc(var(--cw) * 0.054px);
+      font-family: var(--font-smallcaps);
+      font-size: calc(var(--ch) * 0.0095px); line-height: 1.78;
+      letter-spacing: 0.18em; text-align: right; opacity: 0.88;
+    }
+    /* Bridal badge — round, rose-gold */
+    .c-badge {
+      position: absolute; top: calc(var(--ch) * 0.110px);
+      right: calc(var(--cw) * 0.054px);
+      width: calc(var(--ch) * 0.085px); height: calc(var(--ch) * 0.085px);
+      border-radius: 50%; background: #e8c4a0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: #fff; transform: rotate(-7deg);
+      box-shadow: 0 7px 0 rgba(0,0,0,0.10);
+    }
+    .c-badge .v { font-family: var(--font-hero); font-weight: 900; font-style: italic;
+                  font-size: calc(var(--ch) * 0.018px); line-height: 1; }
+    .c-badge .t { font-family: var(--font-smallcaps);
+                  font-size: calc(var(--ch) * 0.0058px); letter-spacing: 0.2em; margin-top: 4px; }
+    /* Cover lines — 4 items in bridal palette */
+    .c-cl { position: absolute; }
+    .c-cl-h {
+      font-family: var(--font-hero); font-style: italic; font-weight: 700;
+      font-size: calc(var(--ch) * 0.0330px); line-height: 1.0;
+    }
+    .c-cl-sub {
+      font-family: var(--font-serif); font-weight: 300;
+      font-size: calc(var(--ch) * 0.0108px); line-height: 1.42;
+      margin-top: 5px; max-width: calc(var(--cw) * 0.24px);
+    }
+    .c-cl-1 { top: calc(var(--ch) * 0.272px); left: calc(var(--cw) * 0.044px); color: #f5b8cc; }
+    .c-cl-1 .c-cl-sub { color: var(--ink); }
+    .c-cl-2 { top: calc(var(--ch) * 0.452px); left: calc(var(--cw) * 0.044px); color: #6ec4bb; }
+    .c-cl-2 .c-cl-sub { color: var(--ink); }
+    .c-cl-3 { top: calc(var(--ch) * 0.272px); right: calc(var(--cw) * 0.044px); text-align: right; color: #e8c4a0; }
+    .c-cl-3 .c-cl-sub { color: var(--ink); margin-left: auto; }
+    .c-cl-4 { top: calc(var(--ch) * 0.435px); right: calc(var(--cw) * 0.044px); text-align: right; color: #f5b8cc; }
+    .c-cl-4 .c-cl-sub { color: var(--ink); margin-left: auto; }
+    /* Pinyon Script name — bottom center */
+    .c-name {
+      position: absolute; bottom: calc(var(--ch) * 0.108px);
+      left: 50%; transform: translateX(-50%);
+      font-family: 'Pinyon Script', cursive;
+      font-size: calc(var(--ch) * 0.115px); line-height: 0.85;
+      color: #fff8f0; white-space: nowrap;
+      text-shadow: 4px 4px 0 rgba(220,150,160,0.50);
+    }
+    .c-tagline {
+      position: absolute; bottom: calc(var(--ch) * 0.069px);
+      left: 0; right: 0; text-align: center;
+      font-family: var(--font-serif); font-style: italic; font-weight: 300;
+      font-size: calc(var(--ch) * 0.0115px); letter-spacing: 0.32em; opacity: 0.88;
+    }
+    .c-barcode {
+      position: absolute; bottom: calc(var(--ch) * 0.027px);
+      left: calc(var(--cw) * 0.044px); display: flex; gap: 1.5px;
+      height: calc(var(--ch) * 0.024px);
+    }
+    .c-barcode span { display: block; background: var(--ink); opacity: 0.78; }
+
+
+    /* ═══════════════════════════════════════════════════════════════
+       COVER D — "bride"  (Brutalist — pink as armor, not sweetness)
+       i-D logic applied to the wedding.  "bride" in the block.
+       Accent: hot-pink #ff3a8a — same hue as the bg, but owned.
+       Cover lines: deadpan lowercase Cormorant italic.
+       "the veil, the wish, the forever" — punk-bridal.
+       ═══════════════════════════════════════════════════════════════ */
+    .d-block {
+      position: absolute; top: calc(var(--ch) * 0.033px);
+      left: calc(var(--cw) * 0.044px);
+      background: var(--accent); color: #fff;
+      padding: 12px 20px 16px;
+      font-family: var(--font-sans-display);
+      font-size: calc(var(--ch) * 0.120px); line-height: 0.78;
+      letter-spacing: -0.04em; text-transform: lowercase;
+    }
+    .d-stack {
+      position: absolute; top: calc(var(--ch) * 0.038px);
+      right: calc(var(--cw) * 0.044px);
+      font-family: var(--font-sans-display);
+      font-size: calc(var(--ch) * 0.0130px); letter-spacing: 0.20em;
+      line-height: 1.68; text-align: right; text-transform: uppercase;
+    }
+    .d-rule {
+      position: absolute; top: calc(var(--ch) * 0.213px);
+      left: 0; right: 0; height: 4px; background: var(--accent);
+    }
+    .d-rule-label {
+      position: absolute; top: calc(var(--ch) * 0.221px);
+      left: calc(var(--cw) * 0.044px);
+      font-family: var(--font-sans-display);
+      font-size: calc(var(--ch) * 0.0108px); letter-spacing: 0.36em;
+      color: var(--accent); text-transform: uppercase;
+    }
+    .d-coverlines {
+      position: absolute; bottom: calc(var(--ch) * 0.162px);
+      left: calc(var(--cw) * 0.044px);
+      display: flex; flex-direction: column;
+      gap: calc(var(--ch) * 0.020px); max-width: calc(var(--cw) * 0.54px);
+    }
+    .d-cl {
+      font-family: var(--font-serif); font-style: italic; font-weight: 300;
+      font-size: calc(var(--ch) * 0.025px); line-height: 1.05; text-transform: lowercase;
+    }
+    .d-cl .tag {
+      font-family: var(--font-sans-display); font-style: normal; font-weight: 400;
+      font-size: calc(var(--ch) * 0.0088px); letter-spacing: 0.36em;
+      display: block; margin-top: 4px; color: var(--accent); text-transform: uppercase;
+    }
+    .d-name {
+      position: absolute; bottom: calc(var(--ch) * 0.040px);
+      left: calc(var(--cw) * 0.044px);
+      font-family: var(--font-sans-display);
+      font-size: calc(var(--ch) * 0.057px); letter-spacing: -0.02em; line-height: 0.9;
+      text-transform: uppercase;
+    }
+    .d-name-x {
+      font-family: var(--font-serif); font-style: italic; font-weight: 300;
+      color: var(--accent); text-transform: lowercase;
+    }
+    .d-barcode {
+      position: absolute; bottom: calc(var(--ch) * 0.044px);
+      right: calc(var(--cw) * 0.044px);
+      display: flex; gap: 2px; height: calc(var(--ch) * 0.034px);
+    }
+    .d-barcode span { display: block; background: var(--ink); }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════
+       COVER A — 花嫁 · Voile
+       The Fate/kaleid bridal character-mag.
+       ══════════════════════════════════════════════════════════ -->
+  <div class="cover-wrap">
+    <div class="cover-id">A — 花嫁 · Voile (Bilingual Bridal)</div>
+    <div class="cover portrait" id="cover-a" style="
+          --cw: 1151; --ch: 1400;
+          --cover-img: url('../illya.png');
+          --ink:    #ffffff;
+          --accent: #e8c9a0;
+          --paper:  #fff8f0;">
+      <div data-layer="background">
+        <div class="bg-img"></div>
+        <div class="fx-vignette-rose"></div>
+        <div class="fx-rim-bridal"></div>
+        <div class="fx-top-band"></div>
+        <div class="fx-bottom-band"></div>
+      </div>
+
+      <div data-layer="effects">
+        <!-- Rose petals — echo the crown already in the image -->
+        <div class="petal" style="top:22%;left:30%;font-size:28px;color:#ffccd8;">✿</div>
+        <div class="petal" style="top:35%;right:22%;font-size:20px;color:#ffe0ea;">❀</div>
+        <div class="petal" style="top:16%;right:42%;font-size:16px;color:#e8c9a0;opacity:0.65;">✦</div>
+        <div class="petal" style="bottom:32%;left:14%;font-size:22px;color:#ffccd8;opacity:0.70;">✿</div>
+      </div>
+
+      <div data-layer="artwork">
+        <div class="a-cjk"><span>花</span><span>嫁</span></div>
+
+        <div class="a-voile">Voile</div>
+        <div class="a-sub">la mariée du printemps</div>
+
+        <div class="a-dateline">Bridal No. I · Spring Issue<br>L'Éternelle Blanche</div>
+        <div class="a-rule"></div>
+
+        <div class="a-badge">
+          <div class="sym">✦</div>
+          <div class="word">I Do<br>Forever</div>
+        </div>
+
+        <div class="a-vert">The White Veil Issue</div>
+
+        <div class="a-cl a-cl-r1">
+          <div class="a-cl-h">Le Voile de Rêve</div>
+          <div class="a-cl-sub">The Einzbern bridal veil —<br>season's most ethereal look</div>
+        </div>
+
+        <div class="a-cl a-cl-r2">
+          <div class="a-cl-h">Wish & Wed</div>
+          <div class="a-cl-sub">Holy Grail couture · the ultimate<br>bridal wish-list for spring</div>
+        </div>
+
+        <div class="a-cl a-cl-l1">
+          <div class="a-cl-h">Rose Couronne</div>
+          <div class="a-cl-sub">Crowns of the season —<br>petals, pearls &amp; magic circles</div>
+        </div>
+
+        <div class="a-sig">
+          <div class="a-sig-name">Illya</div>
+          <div class="a-sig-sub">la mariée de la saison</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       COVER B — VOILE  (Vogue Brides editorial)
+       ══════════════════════════════════════════════════════════ -->
+  <div class="cover-wrap">
+    <div class="cover-id">B — VOILE (High-Fashion Bridal)</div>
+    <div class="cover portrait" id="cover-b" style="
+          --cw: 1151; --ch: 1400;
+          --cover-img: url('../illya.png');
+          --ink:    #ffffff;
+          --accent: #e8b4a8;
+          --paper:  #fff5f0;">
+      <div data-layer="background">
+        <div class="bg-img"></div>
+        <div class="fx-vignette-rose"></div>
+        <div class="fx-rim-bridal"></div>
+        <div class="fx-top-band"></div>
+        <div class="fx-bottom-band"></div>
+      </div>
+
+      <div data-layer="effects"></div>
+
+      <div data-layer="artwork">
+        <div class="b-masthead">VOILE</div>
+        <div class="b-rule"></div>
+        <div class="b-dateline">Bridal Spring 2026 · The White Issue</div>
+
+        <div class="b-hero">
+          <div class="b-hero-h">The Eternal<br>Bride</div>
+          <div class="b-hero-sub">Illyasviel · Bridal Special</div>
+        </div>
+
+        <div class="b-cl b-cl-1">
+          <div class="b-cl-h">The White Veil Affair</div>
+          <div class="b-cl-sub">On wearing white, wishing, and the grace of one perfect day</div>
+        </div>
+        <div class="b-cl b-cl-2">
+          <div class="b-cl-h">Something Pink</div>
+          <div class="b-cl-sub">The Einzbern bridal collection — spring 2026</div>
+        </div>
+
+        <div class="b-issue">Bridal Issue · Spring 2026</div>
+        <div class="b-barcode">
+          <span style="width:3px"></span><span style="width:1.5px"></span>
+          <span style="width:2px"></span><span style="width:1px"></span>
+          <span style="width:3px"></span><span style="width:2px"></span>
+          <span style="width:1px"></span><span style="width:2.5px"></span>
+          <span style="width:1.5px"></span><span style="width:1px"></span>
+          <span style="width:2px"></span><span style="width:1px"></span>
+          <span style="width:2.5px"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       COVER C — Mariage  (Asian Bridal Glossy)
+       ══════════════════════════════════════════════════════════ -->
+  <div class="cover-wrap">
+    <div class="cover-id">C — Mariage (Asian Bridal Glossy)</div>
+    <div class="cover portrait" id="cover-c" style="
+          --cw: 1151; --ch: 1400;
+          --cover-img: url('../illya.png');
+          --ink:    #ffffff;
+          --accent: #e8c4a0;
+          --paper:  #fff8f0;">
+      <div data-layer="background">
+        <div class="bg-img"></div>
+        <div class="fx-vignette-rose"></div>
+        <div class="fx-rim-bridal"></div>
+        <div class="fx-top-band"></div>
+        <div class="fx-bottom-band"></div>
+      </div>
+
+      <div data-layer="effects">
+        <!-- Rose petals + delicate gold accents -->
+        <div class="petal" style="top:21%;left:32%;font-size:32px;color:#ffccd8;">✿</div>
+        <div class="petal" style="top:55%;right:25%;font-size:24px;color:#fff0f4;">❀</div>
+        <div class="petal" style="top:36%;right:18%;font-size:18px;color:#e8c4a0;">✦</div>
+        <div class="petal" style="bottom:30%;left:17%;font-size:20px;color:#ffccd8;opacity:0.75;">✿</div>
+        <div class="petal" style="top:18%;right:36%;font-size:15px;color:#fff0f4;opacity:0.80;">❀</div>
+      </div>
+
+      <div data-layer="artwork">
+        <div class="c-masthead">Mariage</div>
+        <div class="c-sub-cjk">花嫁</div>
+        <div class="c-sub-roman">Hanayome</div>
+
+        <div class="c-issue">No. I<br>Spring 2026<br>¥1,480</div>
+
+        <div class="c-badge">
+          <div class="v">Bridal</div>
+          <div class="t">Special</div>
+        </div>
+
+        <div class="c-cl c-cl-1">
+          <div class="c-cl-h">永遠の魔法</div>
+          <div class="c-cl-sub">the wish that lasts forever — bridal magic for spring</div>
+        </div>
+        <div class="c-cl c-cl-2">
+          <div class="c-cl-h">White Veil</div>
+          <div class="c-cl-sub">season's most dreamy bridal looks — sheer &amp; luminous</div>
+        </div>
+        <div class="c-cl c-cl-3">
+          <div class="c-cl-h">花かんむり</div>
+          <div class="c-cl-sub">the rose crown guide — how to wear the season</div>
+        </div>
+        <div class="c-cl c-cl-4">
+          <div class="c-cl-h">I Do.</div>
+          <div class="c-cl-sub">the ultimate bridal checklist · spring edition</div>
+        </div>
+
+        <div class="c-name">Illya</div>
+        <div class="c-tagline">bridal · magical · forever yours</div>
+
+        <div class="c-barcode">
+          <span style="width:2.5px"></span><span style="width:1px"></span>
+          <span style="width:1.5px"></span><span style="width:2px"></span>
+          <span style="width:1px"></span><span style="width:3px"></span>
+          <span style="width:1.5px"></span><span style="width:1px"></span>
+          <span style="width:2px"></span><span style="width:1px"></span>
+          <span style="width:2.5px"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       COVER D — "bride"  (Brutalist — pink as conviction)
+       ══════════════════════════════════════════════════════════ -->
+  <div class="cover-wrap">
+    <div class="cover-id">D — "bride" (Brutalist Wildcard)</div>
+    <div class="cover portrait" id="cover-d" style="
+          --cw: 1151; --ch: 1400;
+          --cover-img: url('../illya.png');
+          --ink:    #ffffff;
+          --accent: #ff3a8a;">
+      <div data-layer="background">
+        <div class="bg-img"></div>
+        <div class="fx-vignette"></div>
+        <div class="fx-top-band"></div>
+        <div class="fx-bottom-band"></div>
+      </div>
+
+      <div data-layer="effects"></div>
+
+      <div data-layer="artwork">
+        <div class="d-block">bride</div>
+
+        <div class="d-stack">Illya<br>White<br>№ I</div>
+
+        <div class="d-rule"></div>
+        <div class="d-rule-label">The Bridal Issue</div>
+
+        <div class="d-coverlines">
+          <div class="d-cl">the veil, the wish, the forever<span class="tag">bridal · pg 14</span></div>
+          <div class="d-cl">pink is the new white<span class="tag">fashion · pg 32</span></div>
+          <div class="d-cl">i do. i wish. i want everything.<span class="tag">portrait · pg 58</span></div>
+        </div>
+
+        <div class="d-name">ILLYA <span class="d-name-x">× the forever issue</span></div>
+
+        <div class="d-barcode">
+          <span style="width:3px"></span><span style="width:1.5px"></span>
+          <span style="width:2px"></span><span style="width:1px"></span>
+          <span style="width:3px"></span><span style="width:2px"></span>
+          <span style="width:1px"></span><span style="width:2.5px"></span>
+          <span style="width:1.5px"></span><span style="width:1px"></span>
+          <span style="width:2px"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.cover').forEach(function(el) {
+      var cs = getComputedStyle(el);
+      var cw = parseFloat(cs.getPropertyValue('--cw')) || el.offsetWidth;
+      var ch = parseFloat(cs.getPropertyValue('--ch')) || el.offsetHeight;
+      var ratio = cw / ch;
+      el.classList.remove('landscape','portrait','square');
+      if (Math.abs(ratio - 1) < 0.05) el.classList.add('square');
+      else if (ratio > 1) el.classList.add('landscape');
+      else el.classList.add('portrait');
+    });
+  </script>
+</body>
+</html>

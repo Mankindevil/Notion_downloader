@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Transparent Titles — 百合園セイア</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Noto+Serif+JP:wght@700;900&family=M+PLUS+Rounded+1c:wght@400;700;800&family=Kaisei+Opti:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body { background: transparent; }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding: 0;
+    }
+
+    .card {
+      width: 520px;
+      background: transparent;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 48px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* ════════════════════════════════════
+       OPTION A — Bubbly Kawaii
+    ════════════════════════════════════ */
+    .a-furi {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.5em;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 4px;
+      text-shadow: 1px 1px 0 #d93f7e;
+    }
+    .a-kanji {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      font-weight: 800;
+      font-size: 3.8rem;
+      color: #fff;
+      letter-spacing: 0.12em;
+      text-shadow:
+        3px 4px 0 #d93f7e,
+        6px 8px 0 rgba(180,0,80,0.4);
+      line-height: 1;
+    }
+    .a-seia {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      font-weight: 800;
+      font-size: 2.2rem;
+      color: #fff;
+      letter-spacing: 0.4em;
+      text-shadow: 2px 3px 0 #d93f7e;
+      margin-top: 6px;
+    }
+    .a-en {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.35em;
+      color: rgba(255,255,255,0.75);
+      margin-top: 14px;
+      text-transform: uppercase;
+      text-shadow: 1px 1px 0 #d93f7e;
+    }
+    .a-hearts {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      font-size: 1.3rem;
+      color: #fff;
+      opacity: 0.75;
+      text-shadow: 1px 1px 0 #d93f7e;
+    }
+
+    /* ════════════════════════════════════
+       OPTION B — Elegant Serif
+    ════════════════════════════════════ */
+    .b-top-rule, .b-bottom-rule {
+      width: 80%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .b-top-rule    { margin-bottom: 20px; }
+    .b-bottom-rule { margin-top: 20px; }
+    .b-top-rule span, .b-bottom-rule span {
+      flex: 1;
+      height: 1.5px;
+      background: linear-gradient(90deg, transparent, #fff, transparent);
+    }
+    .b-top-rule i, .b-bottom-rule i {
+      color: #fff;
+      font-style: normal;
+      font-size: 1rem;
+      text-shadow: 0 0 6px rgba(255,255,255,0.6);
+    }
+
+    .b-furi {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.6em;
+      color: rgba(255,255,255,0.92);
+      margin-bottom: 6px;
+      text-shadow: 0 0 8px rgba(255,200,225,0.5);
+    }
+    .b-kanji {
+      font-family: 'Noto Serif JP', serif;
+      font-weight: 900;
+      font-size: 3.6rem;
+      color: #fff;
+      letter-spacing: 0.18em;
+      text-shadow:
+        0 2px 14px rgba(255,140,190,0.5),
+        0 0 22px rgba(255,255,255,0.35);
+    }
+    .b-divider {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #fff, transparent);
+      margin: 14px auto;
+    }
+    .b-seia {
+      font-family: 'Noto Serif JP', serif;
+      font-weight: 700;
+      font-size: 1.7rem;
+      letter-spacing: 0.6em;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(255,200,225,0.55);
+    }
+    .b-en {
+      font-family: 'Kaisei Opti', serif;
+      font-size: 0.82rem;
+      letter-spacing: 0.3em;
+      color: rgba(255,255,255,0.78);
+      margin-top: 14px;
+      text-transform: uppercase;
+      text-shadow: 0 0 6px rgba(255,200,225,0.45);
+    }
+
+    /* ════════════════════════════════════
+       OPTION C — Pop Outline Sticker
+    ════════════════════════════════════ */
+    .c-badge {
+      background: #fff;
+      border-radius: 100px;
+      padding: 4px 22px 5px;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 700;
+      font-size: 0.72rem;
+      letter-spacing: 0.35em;
+      color: #e84898;
+      box-shadow: 0 3px 0 #d42d78;
+      margin-bottom: 20px;
+    }
+    .c-kanji {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 900;
+      font-size: 4rem;
+      color: #fff;
+      letter-spacing: 0.1em;
+      -webkit-text-stroke: 4px #d42d78;
+      paint-order: stroke fill;
+      text-shadow: 4px 6px 0 #a01857;
+      line-height: 1;
+    }
+    .c-seia {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-weight: 900;
+      font-size: 2.4rem;
+      color: #fff;
+      -webkit-text-stroke: 3px #d42d78;
+      paint-order: stroke fill;
+      text-shadow: 3px 5px 0 #a01857;
+      letter-spacing: 0.4em;
+      margin-top: 8px;
+    }
+    .c-furi {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.4em;
+      color: #fff;
+      margin-top: 16px;
+      text-shadow: 1px 1px 0 #d42d78;
+    }
+    .c-deco {
+      margin-top: 14px;
+      font-size: 1.4rem;
+      letter-spacing: 0.3em;
+      color: #fff;
+      text-shadow: 1px 1px 0 #d42d78;
+    }
+
+    /* ════════════════════════════════════
+       OPTION D — Soft Dreamy
+    ════════════════════════════════════ */
+    .d-star-row {
+      display: flex;
+      gap: 8px;
+      font-size: 1rem;
+      color: #fff;
+      letter-spacing: 0.15em;
+      margin-bottom: 18px;
+      opacity: 0.85;
+      text-shadow: 0 0 8px rgba(255,180,215,0.6);
+    }
+    .d-furi {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.7em;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 4px;
+      text-shadow: 0 0 8px rgba(255,180,215,0.5);
+    }
+    .d-kanji {
+      font-family: 'Noto Serif JP', serif;
+      font-weight: 900;
+      font-size: 3.4rem;
+      letter-spacing: 0.22em;
+      color: #fff;
+      text-shadow:
+        0 0 22px rgba(255,255,255,0.7),
+        0 0 44px rgba(255,140,200,0.55);
+    }
+    .d-line {
+      width: 120px;
+      height: 1.5px;
+      background: rgba(255,255,255,0.55);
+      border-radius: 2px;
+      margin: 16px auto;
+    }
+    .d-seia {
+      font-family: 'Noto Serif JP', serif;
+      font-weight: 700;
+      font-size: 1.6rem;
+      letter-spacing: 0.7em;
+      color: #fff;
+      text-shadow:
+        0 0 16px rgba(255,255,255,0.6),
+        0 0 28px rgba(255,140,200,0.5);
+    }
+    .d-en {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.4em;
+      color: rgba(255,255,255,0.75);
+      margin-top: 18px;
+      text-transform: uppercase;
+      text-shadow: 0 0 8px rgba(255,180,215,0.5);
+    }
+    .d-star-row-b { margin-top: 18px; margin-bottom: 0; }
+  </style>
+</head>
+<body>
+
+  <div class="card card-a" id="card-a">
+    <div class="a-furi">ゆりぞの</div>
+    <div class="a-kanji">百合園</div>
+    <div class="a-seia">セイア</div>
+    <div class="a-en">Yurizono Seria</div>
+    <div class="a-hearts">♡ ♡ ♡</div>
+  </div>
+
+  <div class="card card-b" id="card-b">
+    <div class="b-top-rule"><span></span><i>✦</i><span></span></div>
+    <div class="b-furi">ゆりぞの</div>
+    <div class="b-kanji">百合園</div>
+    <div class="b-divider"></div>
+    <div class="b-seia">セイア</div>
+    <div class="b-en">Yurizono · Seria</div>
+    <div class="b-bottom-rule"><span></span><i>✦</i><span></span></div>
+  </div>
+
+  <div class="card card-c" id="card-c">
+    <div class="c-badge">BLUE ARCHIVE</div>
+    <div class="c-kanji">百合園</div>
+    <div class="c-seia">セイア</div>
+    <div class="c-furi">ゆりぞの &nbsp;·&nbsp; YURIZONO SERIA</div>
+    <div class="c-deco">★ ☆ ★</div>
+  </div>
+
+  <div class="card card-d" id="card-d">
+    <div class="d-star-row">✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦</div>
+    <div class="d-furi">ゆりぞの</div>
+    <div class="d-kanji">百合園</div>
+    <div class="d-line"></div>
+    <div class="d-seia">セイア</div>
+    <div class="d-en">Yurizono Seria</div>
+    <div class="d-star-row d-star-row-b">✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦</div>
+  </div>
+
+</body>
+</html>
