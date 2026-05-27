@@ -352,6 +352,8 @@ def extract_images_from_source(html: str) -> list:
     for p in patterns:
         for u in re.findall(p, html):
             u = re.split(r'["\'\s<>]', u)[0]
+            if ".svg" in u.lower():
+                continue
             if u not in seen:
                 seen.add(u)
                 result.append(u)

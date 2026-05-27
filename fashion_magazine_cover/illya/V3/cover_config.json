@@ -1,0 +1,73 @@
+{
+  "cover-a": {
+    "cjk_line1": "甘い",
+    "cjk_line2": "魔法少女",
+    "english_title": "Prisma Illya",
+    "english_sub": "the bridal issue",
+    "dateline": "May 24, 2026 · Special issue of Einzbern",
+    "badge_s": "✦",
+    "badge_x": "x777",
+    "badge_t": "Class card bridal couture crystal veil",
+    "vert": "Special Bridal Issue",
+    "cl1_h": "Fuyuki's bridal idol in the new era",
+    "cl1_sub": "The white veil and rose crown debut on the cover",
+    "cl2_h": "High-end lace at the Einzbern estate",
+    "cl2_sub": "Illya von Einzbern's handmade bridal look revealed",
+    "cl3_h": "latest fashion · Veil · Lace · sweet love",
+    "cl3_sub": "Fuyuki is the city you absolutely don't want to miss",
+    "sig_name": "Illya",
+    "sig_sub": "Special guest from Einzbern"
+  },
+  "cover-b": {
+    "masthead": "ILLYA",
+    "dateline": "MAY 2026 · NO. 07 · ¥980",
+    "hero_h": "The Bridal Issue",
+    "hero_sub": "ON THE COVER · ILIYA VON EINZBERN",
+    "cl1_h": "White Veil",
+    "cl1_sub": "How Fuyuki is rewriting wedding couture for the magical-girl era.",
+    "cl2_h": "Inside the Kaleid",
+    "cl2_sub": "A portrait at the Einzbern estate, photographed in rose and lace.",
+    "issue": "VOL VII · MMXXVI"
+  },
+  "cover-c": {
+    "masthead": "Illya",
+    "sub_cjk": "魔法少女イリヤ 季刊",
+    "sub_romaji": "PRISMA ILLYA QUARTERLY",
+    "issue": "May 2026 · Issue 077 · ¥980 / $14",
+    "price": "¥980",
+    "price_tag": "BRIDAL",
+    "cl1_h": "今月のウェディング!",
+    "cl1_sub": "Bridal lace & rose crown — the look every magical girl wants",
+    "cl2_h": "Veil Makeup Tutorial",
+    "cl2_sub": "Get the Einzbern glow — 5 looks with crimson rose accents",
+    "cl3_h": "New color · LIP",
+    "cl3_sub": "5 shades inspired by Fuyuki cherry blossoms",
+    "cl4_h": "30-day lace reset",
+    "cl4_sub": "Stockings, gloves & veil care from the Kaleid liner",
+    "name": "Illya",
+    "tagline": "SPECIAL · BRIDAL · COVER"
+  },
+  "cover-d": {
+    "block": "illya",
+    "issue_stack": "ISS. 07 · MAY 26 · ¥980",
+    "rule_label": "THE BRIDAL ISSUE",
+    "cl1_text": "the rose veil",
+    "cl1_tag": "COVER · PG 24",
+    "cl2_text": "a portrait in pink",
+    "cl2_tag": "INTERVIEW · PG 60",
+    "cl3_text": "einzbern, ungoverned",
+    "cl3_tag": "FASHION · PG 88",
+    "name": "ILLYA",
+    "name_x": "× bridal issue"
+  },
+  "cover-e": {
+    "vmast": "PRISMA",
+    "vmast_sub": "the bridal issue · spring 2026",
+    "issue": "VOL VII · MAY 2026 · ¥980",
+    "cl1_h": "White Veil",
+    "cl1_sub": "How Fuyuki is rewriting wedding couture",
+    "cl2_h": "A Portrait in Rose",
+    "cl2_sub": "Photographed at the Einzbern estate",
+    "name": "Illya"
+  }
+}
