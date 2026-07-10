@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import json
 import logging
 import re
 import sys
@@ -188,6 +189,36 @@ def parse_notion_date(raw: str, fallback_year: str = "") -> str:
         log.debug(f"    → 上星期X match: {result}")
         return result
 
+    # Bare weekday name → most recent occurrence (Notion collapses recent dates this way)
+    _weekday_names = {
+        # Chinese
+        "星期一": 0, "星期二": 1, "星期三": 2, "星期四": 3, "星期五": 4, "星期六": 5, "星期日": 6, "星期天": 6,
+        "週一": 0, "週二": 1, "週三": 2, "週四": 3, "週五": 4, "週六": 5, "週日": 6, "週天": 6,
+        "周一": 0, "周二": 1, "周三": 2, "周四": 3, "周五": 4, "周六": 5, "周日": 6, "周天": 6,
+        # Japanese (long form must come before short to match correctly in substring scan)
+        "月曜日": 0, "火曜日": 1, "水曜日": 2, "木曜日": 3, "金曜日": 4, "土曜日": 5, "日曜日": 6,
+        "月曜": 0, "火曜": 1, "水曜": 2, "木曜": 3, "金曜": 4, "土曜": 5, "日曜": 6,
+        # Korean
+        "월요일": 0, "화요일": 1, "수요일": 2, "목요일": 3, "금요일": 4, "토요일": 5, "일요일": 6,
+        # English
+        "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
+        "friday": 4, "saturday": 5, "sunday": 6,
+    }
+    raw_stripped = raw.strip()
+    matched_wd = _weekday_names.get(raw_stripped)
+    if matched_wd is None:
+        matched_wd = _weekday_names.get(raw_stripped.lower())
+    if matched_wd is None:
+        for key, wd in _weekday_names.items():
+            if not key.isascii() and key in raw:
+                matched_wd = wd
+                break
+    if matched_wd is not None:
+        diff = (today.weekday() - matched_wd) % 7
+        result = (today - timedelta(days=diff)).isoformat()
+        log.debug(f"    → bare weekday {raw_stripped!r}: {result}")
+        return result
+
     # ── Relative: N units ago ─────────────────────────────────────────────
     m = re.search(r'(\d+)\s*(?:天前|日前|days?\s*ago)', raw, re.I)
     if m:
@@ -327,18 +358,40 @@ def get_bg_image_urls(page):
     return urls
 
 
+# Hosts that only ever serve non-content thumbnails / proxies / tracking pixels —
+# never the artist's uploaded artwork. Filtered out of post images.
+_JUNK_IMG_HOSTS = (
+    "gstatic.com", "encrypted-tbn", "google.com/images",
+    "googleusercontent.com/proxy", "notion.so/images/",
+)
+
+
 def get_all_img_urls(page):
+    """Collect resolved (absolute) <img> URLs, skipping placeholders, icons and junk thumbnails.
+
+    Notion lazy-loads content images: the `src` *attribute* is often a relative path
+    ("/image/...") or still a data: placeholder, while the resolved `.src` / `.currentSrc`
+    *property* is always the absolute URL. We read the property — reading the attribute and
+    testing `startswith("http")` silently drops every relative-attribute content image.
+    """
+    raw = page.evaluate("""() => Array.from(document.querySelectorAll('img')).map(im => ({
+        src: im.currentSrc || im.src || '',
+        nw: im.naturalWidth || 0,
+    }))""")
     urls = []
-    for img in page.query_selector_all("img"):
-        src = img.get_attribute("src") or ""
-        if src.startswith("http") and ".svg" not in src and not src.startswith("data:"):
-            try:
-                w = img.evaluate("el => el.naturalWidth")
-                if w and w < 30:
-                    continue
-            except Exception:
-                pass
-            urls.append(src)
+    for im in raw:
+        src = im.get("src") or ""
+        low = src.lower()
+        if not src.startswith("http") or src.startswith("data:"):
+            continue
+        if ".svg" in low:
+            continue
+        if any(h in low for h in _JUNK_IMG_HOSTS):
+            continue
+        # naturalWidth is 0 for not-yet-loaded images (keep those); only drop true tiny icons.
+        if 0 < im.get("nw", 0) < 30:
+            continue
+        urls.append(src)
     return urls
 
 
@@ -921,16 +974,21 @@ def get_cards_with_years(page) -> list:
                         break
                 if not info["cover_url"]:
                     for img in card_el.query_selector_all("img"):
-                        src = img.get_attribute("src") or ""
-                        if src.startswith("http") and ".svg" not in src:
-                            try:
-                                w = img.evaluate("el => el.naturalWidth")
-                                if not w or w > 30:
-                                    info["cover_url"] = src
-                                    break
-                            except Exception:
+                        # Read the resolved property (absolute) — the attribute may be relative.
+                        src = img.evaluate("el => el.currentSrc || el.src || ''") or ""
+                        low = src.lower()
+                        if not src.startswith("http") or ".svg" in low:
+                            continue
+                        if any(h in low for h in _JUNK_IMG_HOSTS):
+                            continue
+                        try:
+                            w = img.evaluate("el => el.naturalWidth")
+                            if not w or w > 30:
                                 info["cover_url"] = src
                                 break
+                        except Exception:
+                            info["cover_url"] = src
+                            break
         except Exception:
             pass
 
@@ -1034,12 +1092,30 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
         covers_dir = out_dir / "covers"
         covers_dir.mkdir(parents=True, exist_ok=True)
 
-        # ── Download cache for --skip-downloaded ──────────────────────────────
-        cache_file = out_dir / ".downloaded_hrefs.txt"
-        downloaded_hrefs: set = set()
-        if skip_downloaded and cache_file.exists():
-            downloaded_hrefs = set(cache_file.read_text(encoding="utf-8").splitlines())
-            log.info(f"  Skip-downloaded: {len(downloaded_hrefs)} hrefs already in cache")
+        # ── Download manifest (href → folder/date/status) ─────────────────────
+        # A JSON manifest replaces the old flat .downloaded_hrefs.txt. It records WHERE each
+        # post went and whether every image succeeded, so --skip-downloaded only skips posts
+        # that are actually complete (incomplete ones get retried), and a re-run reuses the
+        # existing folder instead of creating a stale duplicate when the parsed date changes.
+        manifest_file = out_dir / ".manifest.json"
+        manifest: dict = {}
+        if manifest_file.exists():
+            try:
+                manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+            except Exception as e:
+                log.warning(f"  ⚠ manifest unreadable ({e}); starting fresh")
+        # One-time migration from the legacy flat cache: treat listed hrefs as complete.
+        legacy = out_dir / ".downloaded_hrefs.txt"
+        if legacy.exists():
+            for h in legacy.read_text(encoding="utf-8").splitlines():
+                manifest.setdefault(h.strip(), {"complete": True, "local_path": ""})
+        if skip_downloaded:
+            done = sum(1 for v in manifest.values() if v.get("complete"))
+            log.info(f"  Skip-downloaded: {done} complete post(s) in manifest")
+
+        def save_manifest():
+            manifest_file.write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
         all_records = []
 
@@ -1048,8 +1124,12 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
             title = info["title"] or f"untitled_{idx}"
             log.info(f"\n[{idx:03d}/{len(cards)}] [{year}] {title}")
 
-            if skip_downloaded and info["href"] in downloaded_hrefs:
-                log.info("  → Already downloaded, skipping")
+            prev = manifest.get(info["href"])
+            # Skip only posts recorded as fully complete whose folder still exists —
+            # an incompletely-downloaded post is re-visited so its missing images recover.
+            if (skip_downloaded and prev and prev.get("complete")
+                    and prev.get("local_path") and (out_dir / prev["local_path"]).exists()):
+                log.info("  → Already fully downloaded, skipping")
                 continue
 
             # ── Download cover ─────────────────────────────────────────────
@@ -1080,8 +1160,20 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
 
             safe_title = slugify(sub.get("title") or title)
             folder_name = f"{post_date}_{safe_title}"
+            local_path = f"{year}/{folder_name}"
             year_dir = out_dir / year
+            year_dir.mkdir(parents=True, exist_ok=True)
             page_dir = year_dir / folder_name
+
+            # If this post was previously saved under a different folder (e.g. the date went
+            # from 2026-00-00 to 2026-05-19 once parsing improved), move the old folder rather
+            # than leaving a stale duplicate behind.
+            if prev and prev.get("local_path") and prev["local_path"] != local_path:
+                old_dir = out_dir / prev["local_path"]
+                if old_dir.exists() and not page_dir.exists():
+                    old_dir.rename(page_dir)
+                    log.info(f"  ↻ migrated {prev['local_path']} → {local_path}")
+
             page_dir.mkdir(parents=True, exist_ok=True)
             log.info(f"  → folder: {folder_name}")
 
@@ -1117,10 +1209,18 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
             log.info(f"  ✓ saved: {year}/{folder_name}/README.md  "
                      f"({len(image_records)} images, {len(record['text'])} text blocks)")
 
-            if skip_downloaded and info["href"]:
-                with cache_file.open("a", encoding="utf-8") as cf:
-                    cf.write(info["href"] + "\n")
-                downloaded_hrefs.add(info["href"])
+            # Record outcome in the manifest. "complete" only when every image saved OK,
+            # so a partial download is retried on the next --skip-downloaded run.
+            if info["href"]:
+                n_ok = sum(1 for r in image_records if r["file"])
+                manifest[info["href"]] = {
+                    "local_path": local_path,
+                    "title": record["title"],
+                    "date": post_date,
+                    "images": n_ok,
+                    "complete": bool(image_records) and n_ok == len(image_records),
+                }
+                save_manifest()
 
         write_index_md(out_dir, all_records)
         build_html(out_dir, all_records, url)
@@ -1226,6 +1326,180 @@ h3 a:hover{{text-decoration:underline}}
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Reverify: re-check already-downloaded posts and recover images the old bug dropped
+# ──────────────────────────────────────────────────────────────────────────────
+
+_IMG_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+_SRC_RE = re.compile(r'\|\s*Source\s*\|\s*\[[^\]]*\]\((https?://[^)\s]+)\)')
+_TAGS_RE = re.compile(r'\|\s*Tags\s*\|\s*([^|]+?)\s*\|')
+_COVER_RE = re.compile(r'!\[cover\]\([^)]*covers/([^)]+)\)')
+# Junk thumbnails (e.g. gstatic 225×225) are ~10 KB; real artwork is far larger.
+# Only stale image files under this size are deleted, so real images are never lost.
+_JUNK_MAX_BYTES = 20 * 1024
+
+
+def _read_post_meta(readme: Path):
+    """Pull Source href, Tags and cover filename out of an existing README.md."""
+    href, tags, cover = "", [], None
+    try:
+        txt = readme.read_text(encoding="utf-8")
+    except Exception:
+        return href, tags, cover
+    m = _SRC_RE.search(txt)
+    if m:
+        href = m.group(1).strip()
+    m = _TAGS_RE.search(txt)
+    if m:
+        tags = [t.strip() for t in m.group(1).split(",") if t.strip()]
+    m = _COVER_RE.search(txt)
+    if m:
+        cover = m.group(1).strip()
+    return href, tags, cover
+
+
+def rebuild_index_from_disk(out_dir: Path, source_url: str = ""):
+    """Regenerate the top-level README.md + index.html from whatever post folders exist on
+    disk (used after reverify/dedup so the index reflects the cleaned state)."""
+    records = []
+    for readme in sorted(out_dir.glob("*/*/README.md")):
+        folder = readme.parent
+        year = folder.parent.name
+        href, tags, cover = _read_post_meta(readme)
+        txt = readme.read_text(encoding="utf-8")
+        tm = re.search(r'^#\s+(.+)$', txt, re.M)
+        title = tm.group(1).strip() if tm else folder.name
+        dm = re.search(r'\|\s*投稿日\s*\|\s*([0-9-]+)\s*\|', txt)
+        n_imgs = sum(1 for f in folder.iterdir() if f.suffix.lower() in _IMG_EXTS)
+        records.append({
+            "year": year, "local_path": f"{year}/{folder.name}",
+            "title": title, "date": dm.group(1) if dm else "",
+            "tags": tags, "cover_file": cover, "href": href,
+            "images": [None] * n_imgs,
+        })
+    write_index_md(out_dir, records)
+    build_html(out_dir, records, source_url)
+    log.info(f"  rebuilt index from {len(records)} folder(s)")
+
+
+def reverify_existing(out_dir: Path, headless: bool = True, profile_dir: Path = None,
+                      force: bool = False, source_url: str = ""):
+    """Re-visit every already-downloaded post, refetch its real images (recovering ones the
+    old relative-`src` bug silently dropped) and delete junk thumbnails left on disk.
+
+    Resumable: posts marked `reverified` in the manifest are skipped unless --force.
+    Safe: a post that yields no images is left untouched; only sub-20 KB stale files are
+    deleted, so real artwork is never removed even if a page under-fetches on one pass.
+    """
+    profile_dir = profile_dir or (out_dir / ".cloak-profile")
+
+    manifest_file = out_dir / ".manifest.json"
+    manifest: dict = {}
+    if manifest_file.exists():
+        try:
+            manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+        except Exception:
+            manifest = {}
+
+    def save_manifest():
+        manifest_file.write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
+                                 encoding="utf-8")
+
+    # Worklist from existing folders — every README carries its Source href.
+    posts, seen = [], set()
+    for readme in sorted(out_dir.glob("*/*/README.md")):
+        href, tags, cover = _read_post_meta(readme)
+        if not href or href in seen:
+            continue
+        seen.add(href)
+        posts.append({"href": href, "folder": readme.parent,
+                      "year": readme.parent.parent.name, "tags": tags, "cover": cover})
+    log.info(f"Reverify: {len(posts)} post(s) to check")
+
+    stats = {"checked": 0, "added": 0, "junk_removed": 0, "skipped": 0, "no_images": 0}
+    ctx = make_context(headless, profile_dir)
+    try:
+        page = ctx.new_page()
+        page.set_default_timeout(30000)
+        for idx, p in enumerate(posts, 1):
+            href, folder = p["href"], p["folder"]
+            if manifest.get(href, {}).get("reverified") and not force:
+                stats["skipped"] += 1
+                continue
+
+            log.info(f"\n[{idx:03d}/{len(posts)}] reverify {p['year']}/{folder.name}")
+            existing = {f.name for f in folder.iterdir() if f.suffix.lower() in _IMG_EXTS}
+
+            sub = scrape_subpage(page, href, fallback_year=p["year"])
+            imgs = sub.get("images", [])
+            if not imgs:
+                log.warning("  ⚠ no images extracted — leaving folder untouched")
+                stats["no_images"] += 1
+                continue
+
+            new_files, records = [], []
+            for i, u in enumerate(imgs, 1):
+                fn = f"{i:03d}.{url_ext(u)}"
+                ok = download(u, folder / fn)
+                new_files.append(fn)
+                records.append({"file": fn if ok else None, "url": u})
+            new_set = set(new_files)
+
+            added = [f for f in new_files if f not in existing]
+            if added:
+                stats["added"] += len(added)
+                log.info(f"  + recovered {len(added)} image(s): {', '.join(added)}")
+
+            # Remove stale junk thumbnails (small files not in the fresh set).
+            for f in list(folder.iterdir()):
+                if (f.suffix.lower() in _IMG_EXTS and f.name not in new_set
+                        and f.stat().st_size < _JUNK_MAX_BYTES):
+                    try:
+                        f.unlink()
+                        stats["junk_removed"] += 1
+                        log.info(f"  ✗ removed junk thumbnail: {f.name}")
+                    except Exception:
+                        pass
+
+            rec = {
+                "title": sub.get("title") or folder.name,
+                "date": sub.get("date") or "",
+                "year": p["year"],
+                "tags": p["tags"],
+                "cover_file": p["cover"],
+                "href": href,
+                "properties": sub.get("properties", {}),
+                "text": sub.get("text", []),
+                "images": records,
+            }
+            write_markdown(folder, rec)
+
+            n_ok = sum(1 for r in records if r["file"])
+            manifest[href] = {
+                "local_path": f"{p['year']}/{folder.name}",
+                "title": rec["title"],
+                "date": rec["date"],
+                "images": n_ok,
+                "complete": n_ok == len(records) and n_ok > 0,
+                "reverified": True,
+            }
+            save_manifest()
+            stats["checked"] += 1
+
+        rebuild_index_from_disk(out_dir, source_url)
+        log.info(f"\n{'='*60}")
+        log.info(f"✅ Reverify done — checked {stats['checked']}, recovered {stats['added']} "
+                 f"image(s), removed {stats['junk_removed']} junk, skipped {stats['skipped']} "
+                 f"(already reverified), {stats['no_images']} yielded no images")
+        log.info(f"{'='*60}")
+    finally:
+        try:
+            ctx.close()
+        except Exception:
+            pass
+    return stats
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Entry point
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -1241,6 +1515,10 @@ def main():
                     help="Skip pages that contain a Notion collection-view block")
     ap.add_argument("--profile-dir", default=None,
                     help="CloakBrowser persistent profile directory (default: <out>/.cloak-profile)")
+    ap.add_argument("--reverify", action="store_true",
+                    help="Re-check already-downloaded posts: refetch real images and remove junk thumbnails")
+    ap.add_argument("--force", action="store_true",
+                    help="With --reverify, re-check even posts already marked reverified in the manifest")
     args = ap.parse_args()
 
     setup_logging(args.log)
@@ -1255,10 +1533,15 @@ def main():
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     profile_dir = Path(args.profile_dir) if args.profile_dir else None
-    scrape_gallery(args.url, out_dir, headless=not args.no_headless,
-                   skip_downloaded=args.skip_downloaded,
-                   skip_collections=args.skip_collections,
-                   profile_dir=profile_dir)
+
+    if args.reverify:
+        reverify_existing(out_dir, headless=not args.no_headless,
+                          profile_dir=profile_dir, force=args.force, source_url=args.url)
+    else:
+        scrape_gallery(args.url, out_dir, headless=not args.no_headless,
+                       skip_downloaded=args.skip_downloaded,
+                       skip_collections=args.skip_collections,
+                       profile_dir=profile_dir)
 
 
 if __name__ == "__main__":

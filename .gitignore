@@ -14,3 +14,7 @@ ape_insight/
 收集截图/
 RAN_download/
 Takeout/
+
+# personal / local-only files — never push to the public repo
+resume2.tex
+jpyb-ocr-sft-pipeline-plan-md-i-have-buzzing-trinket.md
