@@ -3,7 +3,7 @@
 ran_downloader.py
 
 Downloads all posts from ranagu.com (WordPress), including password-protected
-ones. Passwords are loaded from local P:\\fanbox\\RAN★\\**\\links-*.txt files.
+ones. Passwords are loaded from local P:\\fanbox\\RAN★ post-folder text files.
 
 Usage:
     python ran_downloader.py
@@ -117,14 +117,14 @@ def download_image(session: requests.Session, url: str, dest: Path, retries: int
 
 _REFERENCE_PHRASES = ("同一", "共通", "最新", "プラン", "参照", "同じ")
 
-def _extract_password(links_path: Path) -> str:
-    """Read a links-*.txt file and return the actual 閲覧コード password.
+def _extract_password(text_path: Path) -> str:
+    """Read a text file and return the actual 閲覧コード password.
 
     Skips reference strings like 「最新月の特濃プラン投稿と同一」 that point to
     another post's password rather than giving the password itself.
     """
     try:
-        text = links_path.read_text(encoding="utf-8", errors="replace")
+        text = text_path.read_text(encoding="utf-8", errors="replace")
     except Exception:
         return ""
     for line in reversed(text.splitlines()):
@@ -174,11 +174,22 @@ def load_password_map(
             continue
         month, title = m.group(1), m.group(2).strip()
 
-        links_files = list(folder.glob("links-*.txt"))
-        if not links_files:
-            continue
+        # Older exports put metadata in links-*.txt; newer Fanbox exports use
+        # numeric names such as 12469966.txt.  Prefer the legacy files when
+        # present, then inspect every other text file for a valid 閲覧コード.
+        text_files = sorted(
+            folder.glob("*.txt"),
+            key=lambda path: (
+                not path.name.lower().startswith("links-"),
+                path.name.lower(),
+            ),
+        )
+        pwd = ""
+        for text_file in text_files:
+            pwd = _extract_password(text_file)
+            if pwd:
+                break
 
-        pwd = _extract_password(links_files[0])
         if pwd:
             title_map[title] = pwd
             bucket = month_map.setdefault(month, [])

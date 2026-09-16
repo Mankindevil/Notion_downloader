@@ -18,13 +18,17 @@ Usage:
 import argparse
 import json
 import logging
+import random
 import re
 import sys
 import time
+import urllib.error
 import urllib.request
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from datetime import date, timedelta
+
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -76,25 +80,221 @@ def url_ext(url: str) -> str:
     return ext if ext in ("jpg", "jpeg", "png", "gif", "webp") else "jpg"
 
 
-def download(url: str, dest: Path, retries: int = 3) -> bool:
-    if dest.exists():
-        log.debug(f"  already exists: {dest.name}")
-        return True
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://notion.so/",
-    }
-    for attempt in range(retries):
+_IMG_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+_DOWNLOAD_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+    "Referer": "https://notion.so/",
+}
+
+
+class _DownloadError(RuntimeError):
+    def __init__(self, message: str, retry_after: float = 0):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+def _retry_after_seconds(headers) -> float:
+    try:
+        value = headers.get("Retry-After") or headers.get("retry-after") or ""
+        return max(0.0, float(value))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _image_kind(head: bytes) -> str:
+    if head.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if head.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if head.startswith((b"GIF87a", b"GIF89a")):
+        return "gif"
+    if head.startswith(b"RIFF") and head[8:12] == b"WEBP":
+        return "webp"
+    if len(head) >= 16 and head[4:8] == b"ftyp" and head[8:12] in (b"avif", b"avis"):
+        return "avif"
+    return ""
+
+
+def _validate_image_structure(head: bytes, tail: bytes, size: int) -> str:
+    if size < 32:
+        raise _DownloadError(f"response is too small to be an image ({size} bytes)")
+    kind = _image_kind(head)
+    if not kind:
+        raise _DownloadError("response does not have a supported image signature")
+    if kind == "png" and b"IEND\xaeB`\x82" not in tail:
+        raise _DownloadError("PNG is truncated (IEND marker missing)")
+    if kind == "jpeg" and b"\xff\xd9" not in tail:
+        raise _DownloadError("JPEG is truncated (end marker missing)")
+    if kind == "webp":
+        declared_size = int.from_bytes(head[4:8], "little") + 8
+        if declared_size > size:
+            raise _DownloadError(
+                f"WebP is truncated ({size} of {declared_size} declared bytes)"
+            )
+    return kind
+
+
+def _validate_image_bytes(data: bytes, headers=None) -> str:
+    normalized = {str(k).lower(): str(v) for k, v in (headers or {}).items()}
+    content_type = normalized.get("content-type", "").split(";", 1)[0].strip().lower()
+    if (content_type and not content_type.startswith("image/")
+            and content_type not in ("application/octet-stream", "binary/octet-stream")):
+        raise _DownloadError(f"unexpected Content-Type {content_type!r}")
+
+    content_length = normalized.get("content-length", "")
+    content_encoding = normalized.get("content-encoding", "").lower()
+    if content_length and content_encoding in ("", "identity"):
         try:
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=40) as r:
-                dest.write_bytes(r.read())
-            log.info(f"  ✓ downloaded: {dest.name}")
-            return True
-        except Exception as e:
-            log.warning(f"  ✗ attempt {attempt + 1}/{retries} failed: {e}")
-            time.sleep(2 ** attempt)
+            expected = int(content_length)
+        except ValueError:
+            expected = 0
+        if expected and expected != len(data):
+            raise _DownloadError(
+                f"incomplete response ({len(data)} of {expected} bytes)"
+            )
+
+    kind = _validate_image_structure(data[:32], data[-64:], len(data))
+    if kind == "gif" and not data.rstrip(b"\x00\r\n\t ").endswith(b";"):
+        raise _DownloadError("GIF is truncated (trailer missing)")
+    return kind
+
+
+def is_valid_image_file(path: Path) -> bool:
+    try:
+        size = path.stat().st_size
+        with path.open("rb") as f:
+            head = f.read(32)
+            if _image_kind(head) == "gif":
+                f.seek(0)
+                _validate_image_bytes(f.read())
+                return True
+            f.seek(max(0, size - 64))
+            tail = f.read(64)
+        _validate_image_structure(head, tail, size)
+        return True
+    except (OSError, _DownloadError):
+        return False
+
+
+def _folder_has_valid_images(folder: Path, expected_count) -> bool:
+    try:
+        expected = int(expected_count)
+    except (TypeError, ValueError):
+        return False
+    if expected <= 0 or not folder.is_dir():
+        return False
+    files = list(folder.iterdir())
+    for index in range(1, expected + 1):
+        prefix = f"{index:03d}."
+        if not any(
+            f.name.lower().startswith(prefix)
+            and f.suffix.lower() in _IMG_EXTS
+            and is_valid_image_file(f)
+            for f in files
+        ):
+            return False
+    return True
+
+
+def _fetch_with_urllib(url: str):
+    req = urllib.request.Request(url, headers=_DOWNLOAD_HEADERS)
+    try:
+        with urllib.request.urlopen(req, timeout=40) as response:
+            status = getattr(response, "status", 200)
+            if not 200 <= status < 300:
+                raise _DownloadError(f"HTTP {status}", _retry_after_seconds(response.headers))
+            return response.read(), dict(response.headers.items())
+    except urllib.error.HTTPError as e:
+        raise _DownloadError(
+            f"HTTP {e.code} {e.reason}", _retry_after_seconds(e.headers)
+        ) from e
+    except _DownloadError:
+        raise
+    except Exception as e:
+        raise _DownloadError(str(e)) from e
+
+
+def _fetch_with_browser_request(request_context, url: str):
+    response = None
+    try:
+        response = request_context.get(
+            url,
+            headers=_DOWNLOAD_HEADERS,
+            timeout=60_000,
+            fail_on_status_code=False,
+            max_retries=2,
+        )
+        if not response.ok:
+            raise _DownloadError(
+                f"HTTP {response.status} {response.status_text}",
+                _retry_after_seconds(response.headers),
+            )
+        return response.body(), response.headers
+    except _DownloadError:
+        raise
+    except Exception as e:
+        raise _DownloadError(str(e)) from e
+    finally:
+        if response is not None:
+            try:
+                response.dispose()
+            except Exception:
+                pass
+
+
+def _write_image_atomically(data: bytes, headers, dest: Path) -> str:
+    kind = _validate_image_bytes(data, headers)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    part = dest.with_suffix(dest.suffix + ".part")
+    try:
+        part.write_bytes(data)
+        part.replace(dest)
+    finally:
+        try:
+            part.unlink(missing_ok=True)
+        except OSError:
+            pass
+    return kind
+
+
+def download(url: str, dest: Path, retries: int = 3, request_context=None) -> bool:
+    if dest.exists() and is_valid_image_file(dest):
+        log.debug(f"  already exists and verified: {dest.name}")
+        return True
+    if dest.exists():
+        log.warning(f"  ⚠ existing file is invalid; replacing: {dest.name}")
+
+    for attempt in range(1, retries + 1):
+        retry_after = 0.0
+        fetchers = [("urllib", lambda: _fetch_with_urllib(url))]
+        if request_context is not None:
+            fetchers.append(
+                ("browser fallback", lambda: _fetch_with_browser_request(request_context, url))
+            )
+
+        for source, fetch in fetchers:
+            try:
+                data, headers = fetch()
+                _write_image_atomically(data, headers, dest)
+                suffix = "" if source == "urllib" else f" via {source}"
+                log.info(f"  ✓ downloaded: {dest.name}{suffix}")
+                return True
+            except Exception as e:
+                retry_after = max(retry_after, getattr(e, "retry_after", 0.0))
+                log.warning(
+                    f"  ✗ {source} attempt {attempt}/{retries} failed: {e}"
+                )
+
+        if attempt < retries:
+            delay = min(
+                30.0,
+                max(retry_after, 2 ** (attempt - 1) + random.random()),
+            )
+            log.info(f"  retrying {dest.name} in {delay:.1f}s")
+            time.sleep(delay)
+
     log.error(f"  ✗ FAILED after {retries} attempts: {dest.name}")
     return False
 
@@ -180,6 +380,24 @@ def parse_notion_date(raw: str, fallback_year: str = "") -> str:
         log.debug(f"    → relative '2 days ago': {result}")
         return result
 
+    # Notion may render dates from the previous calendar week in English even
+    # when the browser locale is Chinese, e.g. "Last Wednesday".
+    _english_weekdays = {
+        "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
+        "friday": 4, "saturday": 5, "sunday": 6,
+    }
+    m = re.fullmatch(
+        r'(?:last|previous)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)',
+        r.strip(),
+        re.I,
+    )
+    if m:
+        target_wd = _english_weekdays[m.group(1).lower()]
+        last_week_monday = today - timedelta(days=today.weekday() + 7)
+        result = (last_week_monday + timedelta(days=target_wd)).isoformat()
+        log.debug(f"    → English last-week weekday match: {result}")
+        return result
+
     _wd_map = {'一': 0, '二': 1, '三': 2, '四': 3, '五': 4, '六': 5, '日': 6, '天': 6}
     m = re.search(r'(?:上星期|上週|先週)([一二三四五六日天])', raw)
     if m:
@@ -201,8 +419,7 @@ def parse_notion_date(raw: str, fallback_year: str = "") -> str:
         # Korean
         "월요일": 0, "화요일": 1, "수요일": 2, "목요일": 3, "금요일": 4, "토요일": 5, "일요일": 6,
         # English
-        "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
-        "friday": 4, "saturday": 5, "sunday": 6,
+        **_english_weekdays,
     }
     raw_stripped = raw.strip()
     matched_wd = _weekday_names.get(raw_stripped)
@@ -298,13 +515,55 @@ def make_context(headless: bool, profile_dir: Path):
     )
 
 
+_NOTION_READY_SELECTORS = [
+    "[data-block-id]",
+    ".notion-page-content",
+    ".notion-scroller",
+    ".notion-collection",
+    "main",
+]
+
+
 def wait_for_page(page, timeout=30):
-    for sel in ["[data-block-id]", ".notion-page-content", ".notion-scroller", ".notion-collection", "main"]:
-        try:
-            page.wait_for_selector(sel, timeout=timeout * 1000)
+    """Wait up to *timeout* seconds total for any usable Notion root element."""
+    try:
+        page.wait_for_selector(", ".join(_NOTION_READY_SELECTORS),
+                               timeout=timeout * 1000, state="attached")
+    except Exception:
+        return None
+
+    for sel in _NOTION_READY_SELECTORS:
+        if page.query_selector(sel):
             return sel
-        except Exception:
-            continue
+    return None
+
+
+def navigate_to_notion(page, url: str, navigation_timeout=60, ready_timeout=30,
+                       attempts=2):
+    """Navigate without depending on Notion's often-delayed full load event."""
+    for attempt in range(1, attempts + 1):
+        timed_out = False
+        try:
+            response = page.goto(url, wait_until="domcontentloaded",
+                                 timeout=navigation_timeout * 1000)
+            if response and response.status >= 400:
+                log.warning(f"  HTTP {response.status} while loading {url}")
+        except PlaywrightTimeoutError:
+            timed_out = True
+            log.warning(
+                f"  Navigation did not reach DOMContentLoaded within "
+                f"{navigation_timeout}s; checking the rendered page"
+            )
+
+        sel = wait_for_page(page, timeout=ready_timeout)
+        if sel:
+            if timed_out:
+                log.info("  Notion content rendered despite the navigation timeout; continuing")
+            return sel
+
+        if attempt < attempts:
+            log.warning(f"  No Notion content detected (attempt {attempt}/{attempts}); retrying")
+
     return None
 
 
@@ -414,45 +673,146 @@ def extract_images_from_source(html: str) -> list:
 
 
 def click_tab(page, label: str) -> bool:
-    try:
-        els = page.query_selector_all(f"xpath=//*[contains(text(), '{label}')]")
-        for el in els:
-            target = el
-            for _ in range(5):
+    """Click one visible, exact-match tab label using progressively broader locators."""
+    locators = [
+        ("role=tab", page.get_by_role("tab", name=label, exact=True)),
+        ("role=button", page.get_by_role("button", name=label, exact=True)),
+        ("exact text", page.get_by_text(label, exact=True)),
+    ]
+    for description, locator in locators:
+        try:
+            count = min(locator.count(), 20)
+        except Exception:
+            continue
+        for index in range(count):
+            candidate = locator.nth(index)
+            try:
+                if not candidate.is_visible():
+                    continue
+                candidate.scroll_into_view_if_needed(timeout=2000)
                 try:
-                    target.evaluate("el => el.click()")
-                    time.sleep(0.3)
-                    return True
+                    candidate.click(timeout=5000)
                 except Exception:
-                    pass
-                try:
-                    handle = target.evaluate_handle("el => el.parentElement")
-                    parent = handle.as_element()
-                    if not parent:
-                        break
-                    target = parent
-                except Exception:
-                    break
-    except Exception:
-        pass
+                    candidate.evaluate("el => el.click()")
+                log.debug(f"  tab {label!r} located via {description}")
+                return True
+            except Exception:
+                continue
     return False
+
+
+def click_gallery_tab(page, labels, timeout=60, poll_interval=1.0) -> str:
+    """Wait for the asynchronously rendered gallery tab and return its clicked label."""
+    started = time.monotonic()
+    next_progress_log = 10
+    while time.monotonic() - started < timeout:
+        for label in labels:
+            if click_tab(page, label):
+                return label
+
+        elapsed = time.monotonic() - started
+        if elapsed >= next_progress_log:
+            log.info(f"  Waiting for gallery tab... {int(elapsed)}s/{timeout}s")
+            next_progress_log += 10
+        time.sleep(poll_interval)
+    return ""
+
+
+def visible_tab_labels(page) -> list[str]:
+    """Return a small diagnostic snapshot of visible tab/button labels."""
+    try:
+        return page.evaluate("""() => {
+            const labels = [];
+            const seen = new Set();
+            document.querySelectorAll('[role="tab"], button').forEach(el => {
+                const text = (el.innerText || el.textContent || '').trim();
+                if (!text || text.length > 80 || seen.has(text)) return;
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden') return;
+                seen.add(text);
+                labels.push(text);
+            });
+            return labels.slice(0, 30);
+        }""")
+    except Exception:
+        return []
+
+
+def wait_for_gallery_view_ready(page, timeout=60) -> bool:
+    """Wait until the clicked archive view has rendered multiple year groups."""
+    try:
+        page.wait_for_function("""() => {
+            const years = new Set();
+            document.querySelectorAll('*').forEach(el => {
+                if (el.children.length > 0) return;
+                const text = (el.innerText || el.textContent || '').trim();
+                if (/^20[0-9]{2}$/.test(text)) years.add(text);
+            });
+            return years.size >= 2;
+        }""", timeout=timeout * 1000)
+        return True
+    except Exception:
+        return False
+
+
+_DATE_PROP_KEYS = (
+    "投稿日", "Posted", "Date", "日付", "투고일", "投稿日付", "創建時間", "創建日期",
+)
+
+
+def wait_for_date_property(page, timeout=15) -> bool:
+    """Wait until a date-property label and its asynchronously rendered value coexist."""
+    try:
+        page.wait_for_function("""keys => {
+            const all = document.querySelectorAll('*');
+            for (const el of all) {
+                if (el.children.length > 0) continue;
+                const key = (el.innerText || el.textContent || '').trim();
+                if (!keys.includes(key)) continue;
+                let node = el;
+                for (let depth = 0; depth < 10; depth++) {
+                    node = node.parentElement;
+                    if (!node) break;
+                    const lines = (node.innerText || '')
+                        .split(/\n/).map(s => s.trim()).filter(Boolean);
+                    const index = lines.indexOf(key);
+                    if (index >= 0 && index + 1 < lines.length && lines[index + 1] !== key) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }""", arg=list(_DATE_PROP_KEYS), timeout=timeout * 1000)
+        return True
+    except Exception:
+        return False
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Sub-page scraper
 # ──────────────────────────────────────────────────────────────────────────────
 
-def scrape_subpage(page, page_url: str, fallback_year: str = "") -> dict:
+def scrape_subpage(page, page_url: str, fallback_year: str = "", date_timeout=15) -> dict:
     """Visit a card sub-page, extract title, properties (incl. date), images, text."""
     result = {"url": page_url, "title": "", "date": "", "properties": {}, "images": [], "text": [],
               "is_collection": False}
 
     try:
         log.info(f"  Loading sub-page: {page_url}")
-        page.goto(page_url)
-        sel = wait_for_page(page, timeout=30)
+        sel = navigate_to_notion(page, page_url)
         if not sel:
             log.warning(f"  ⚠ Page load timeout: {page_url}")
+            return result
+        try:
+            page.wait_for_selector(
+                ".notion-page-block .notranslate, h1.notion-title, "
+                "[class*='notion-page-block'] [data-content-editable-leaf], "
+                "[placeholder='Untitled'], h1",
+                timeout=max(5000, date_timeout * 1000),
+                state="attached",
+            )
+        except Exception:
+            log.warning(f"  ⚠ Page title did not render in time: {page_url}")
             return result
         time.sleep(2.5)
 
@@ -463,6 +823,9 @@ def scrape_subpage(page, page_url: str, fallback_year: str = "") -> dict:
         open_all_toggles(page)
         slow_scroll(page)
         open_all_toggles(page)  # open any toggles revealed after scroll
+
+        if not result["is_collection"] and not wait_for_date_property(page, timeout=date_timeout):
+            log.debug(f"  Date property was not ready after {date_timeout}s; trying fallbacks")
 
         # ── Title ────────────────────────────────────────────────────────────
         title_selectors = [
@@ -489,7 +852,7 @@ def scrape_subpage(page, page_url: str, fallback_year: str = "") -> dict:
             log.debug(f"  title from document.title: {result['title']!r}")
 
         # ── Date/property extraction helper ───────────────────────────────────
-        date_prop_keys = {"投稿日", "Posted", "Date", "日付", "투고일", "投稿日付", "創建時間", "創建日期"}
+        date_prop_keys = set(_DATE_PROP_KEYS)
 
         def extract_date_from_time_el(time_el) -> str:
             # 1. datetime attribute (most reliable; Notion always sets this to ISO even for relative display)
@@ -1003,7 +1366,7 @@ def get_cards_with_years(page) -> list:
 
 def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
                    skip_downloaded: bool = False, skip_collections: bool = False,
-                   profile_dir: Path = None):
+                   profile_dir: Path = None, tab_timeout=60, date_timeout=15):
     profile_dir = profile_dir or (out_dir / ".cloak-profile")
     ctx = make_context(headless, profile_dir)
     try:
@@ -1013,18 +1376,45 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
         log.info(f"\n{'='*60}")
         log.info(f"Loading: {url}")
         log.info(f"{'='*60}")
-        page.goto(url)
-        wait_for_page(page, timeout=30)
+        sel = navigate_to_notion(page, url)
+        if not sel:
+            raise RuntimeError(
+                f"Notion content did not render after two attempts: {url}. "
+                "Retry with --no-headless to inspect the browser page."
+            )
         time.sleep(3)
 
         # ── Click 中文畫廊 tab ─────────────────────────────────────────────
-        for label in ["中文畫廊", "中文画廊"]:
-            if click_tab(page, label):
-                log.info(f"✓ Clicked '{label}' tab")
-                break
-        else:
-            log.warning("⚠ Tab not found, using current view")
-        time.sleep(3)
+        # Notion renders view tabs asynchronously. Never scrape the current view
+        # when the intended tab is absent: that can silently replace a 200+ card
+        # archive with a small category/home view.
+        label = click_gallery_tab(page, ["中文畫廊", "中文画廊"], timeout=tab_timeout)
+        if not label:
+            debug_file = out_dir / "debug_tab_not_found.html"
+            try:
+                debug_file.write_text(page.content(), encoding="utf-8")
+            except Exception:
+                pass
+            available = visible_tab_labels(page)
+            if available:
+                log.error(f"Visible tab/button labels: {available}")
+            raise RuntimeError(
+                f"Required gallery tab '中文畫廊' was not found after {tab_timeout:g} seconds. "
+                f"Stopped before scraping the wrong view. Debug HTML: {debug_file}"
+            )
+        log.info(f"✓ Clicked '{label}' tab")
+        if not wait_for_gallery_view_ready(page, timeout=tab_timeout):
+            debug_file = out_dir / "debug_gallery_not_ready.html"
+            try:
+                debug_file.write_text(page.content(), encoding="utf-8")
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"Gallery tab was clicked but its year groups did not render within "
+                f"{tab_timeout:g} seconds. Stopped before collecting cards. "
+                f"Debug HTML: {debug_file}"
+            )
+        log.info("✓ Gallery view is ready (year groups detected)")
 
         # ── Scroll + click ALL "加载更多" interleaved ─────────────────────
         log.info("Scrolling and clicking 'Load More' buttons...")
@@ -1128,9 +1518,19 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
             # Skip only posts recorded as fully complete whose folder still exists —
             # an incompletely-downloaded post is re-visited so its missing images recover.
             if (skip_downloaded and prev and prev.get("complete")
-                    and prev.get("local_path") and (out_dir / prev["local_path"]).exists()):
-                log.info("  → Already fully downloaded, skipping")
-                continue
+                    and prev.get("local_path")):
+                previous_dir = out_dir / prev["local_path"]
+                saved_date = str(prev.get("date") or "")
+                needs_date_repair = not saved_date or saved_date.endswith("-00-00")
+                if needs_date_repair:
+                    log.info("  → Rechecking entry saved with a fallback date")
+                elif _folder_has_valid_images(previous_dir, prev.get("images")):
+                    log.info("  → Already fully downloaded and verified, skipping")
+                    continue
+                else:
+                    log.warning("  ⚠ manifest says complete but files are missing or invalid; repairing")
+                    prev["complete"] = False
+                    save_manifest()
 
             # ── Download cover ─────────────────────────────────────────────
             cover_file = None
@@ -1138,14 +1538,16 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
                 ext = url_ext(info["cover_url"])
                 safe = slugify(title)
                 cover_name = f"{safe}.{ext}"
-                ok = download(info["cover_url"], covers_dir / cover_name)
+                ok = download(info["cover_url"], covers_dir / cover_name,
+                              request_context=ctx.request)
                 cover_file = cover_name if ok else None
                 log.debug(f"  cover: {cover_name} ok={ok}")
 
             # ── Visit sub-page ─────────────────────────────────────────────
             sub = {}
             if info["href"]:
-                sub = scrape_subpage(page, info["href"], fallback_year=info["year"])
+                sub = scrape_subpage(page, info["href"], fallback_year=info["year"],
+                                     date_timeout=date_timeout)
             else:
                 log.warning("  (no href for this card)")
 
@@ -1182,7 +1584,7 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
                 ext = url_ext(img_url)
                 fname = f"{i:03d}.{ext}"
                 dest = page_dir / fname
-                ok = download(img_url, dest)
+                ok = download(img_url, dest, request_context=ctx.request)
                 image_records.append({
                     "file": fname if ok else None,
                     "url": img_url,
@@ -1222,11 +1624,14 @@ def scrape_gallery(url: str, out_dir: Path, headless: bool = True,
                 }
                 save_manifest()
 
-        write_index_md(out_dir, all_records)
-        build_html(out_dir, all_records, url)
+        # A resume run skips most cards, so rebuild from every on-disk README
+        # instead of replacing the global indexes with only this run's subset.
+        rebuild_index_from_disk(out_dir, url)
+        archive_total = sum(1 for _ in out_dir.glob("*/*/README.md"))
 
         log.info(f"\n{'='*60}")
-        log.info(f"✅ DONE — {len(all_records)} entries → {out_dir.resolve()}")
+        log.info(f"✅ DONE — updated {len(all_records)} entries; "
+                 f"full archive {archive_total} entries → {out_dir.resolve()}")
         log.info(f"{'='*60}\n")
 
     finally:
@@ -1329,7 +1734,6 @@ h3 a:hover{{text-decoration:underline}}
 # Reverify: re-check already-downloaded posts and recover images the old bug dropped
 # ──────────────────────────────────────────────────────────────────────────────
 
-_IMG_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 _SRC_RE = re.compile(r'\|\s*Source\s*\|\s*\[[^\]]*\]\((https?://[^)\s]+)\)')
 _TAGS_RE = re.compile(r'\|\s*Tags\s*\|\s*([^|]+?)\s*\|')
 _COVER_RE = re.compile(r'!\[cover\]\([^)]*covers/([^)]+)\)')
@@ -1382,7 +1786,7 @@ def rebuild_index_from_disk(out_dir: Path, source_url: str = ""):
 
 
 def reverify_existing(out_dir: Path, headless: bool = True, profile_dir: Path = None,
-                      force: bool = False, source_url: str = ""):
+                      force: bool = False, source_url: str = "", date_timeout=15):
     """Re-visit every already-downloaded post, refetch its real images (recovering ones the
     old relative-`src` bug silently dropped) and delete junk thumbnails left on disk.
 
@@ -1422,14 +1826,24 @@ def reverify_existing(out_dir: Path, headless: bool = True, profile_dir: Path = 
         page.set_default_timeout(30000)
         for idx, p in enumerate(posts, 1):
             href, folder = p["href"], p["folder"]
-            if manifest.get(href, {}).get("reverified") and not force:
-                stats["skipped"] += 1
-                continue
+            previous = manifest.get(href, {})
+            if previous.get("reverified") and not force:
+                if _folder_has_valid_images(folder, previous.get("images")):
+                    stats["skipped"] += 1
+                    continue
+                log.warning("  ⚠ reverified files are missing or invalid; repairing")
+                previous["reverified"] = False
+                previous["complete"] = False
+                save_manifest()
 
             log.info(f"\n[{idx:03d}/{len(posts)}] reverify {p['year']}/{folder.name}")
-            existing = {f.name for f in folder.iterdir() if f.suffix.lower() in _IMG_EXTS}
+            existing = {
+                f.name for f in folder.iterdir()
+                if f.suffix.lower() in _IMG_EXTS and is_valid_image_file(f)
+            }
 
-            sub = scrape_subpage(page, href, fallback_year=p["year"])
+            sub = scrape_subpage(page, href, fallback_year=p["year"],
+                                 date_timeout=date_timeout)
             imgs = sub.get("images", [])
             if not imgs:
                 log.warning("  ⚠ no images extracted — leaving folder untouched")
@@ -1439,7 +1853,7 @@ def reverify_existing(out_dir: Path, headless: bool = True, profile_dir: Path = 
             new_files, records = [], []
             for i, u in enumerate(imgs, 1):
                 fn = f"{i:03d}.{url_ext(u)}"
-                ok = download(u, folder / fn)
+                ok = download(u, folder / fn, request_context=ctx.request)
                 new_files.append(fn)
                 records.append({"file": fn if ok else None, "url": u})
             new_set = set(new_files)
@@ -1474,13 +1888,14 @@ def reverify_existing(out_dir: Path, headless: bool = True, profile_dir: Path = 
             write_markdown(folder, rec)
 
             n_ok = sum(1 for r in records if r["file"])
+            complete = n_ok == len(records) and n_ok > 0
             manifest[href] = {
                 "local_path": f"{p['year']}/{folder.name}",
                 "title": rec["title"],
                 "date": rec["date"],
                 "images": n_ok,
-                "complete": n_ok == len(records) and n_ok > 0,
-                "reverified": True,
+                "complete": complete,
+                "reverified": complete,
             }
             save_manifest()
             stats["checked"] += 1
@@ -1515,6 +1930,10 @@ def main():
                     help="Skip pages that contain a Notion collection-view block")
     ap.add_argument("--profile-dir", default=None,
                     help="CloakBrowser persistent profile directory (default: <out>/.cloak-profile)")
+    ap.add_argument("--tab-timeout", type=float, default=60,
+                    help="Seconds to wait for the gallery tab and its year groups (default: 60)")
+    ap.add_argument("--date-timeout", type=float, default=15,
+                    help="Seconds to wait for an asynchronously rendered date property (default: 15)")
     ap.add_argument("--reverify", action="store_true",
                     help="Re-check already-downloaded posts: refetch real images and remove junk thumbnails")
     ap.add_argument("--force", action="store_true",
@@ -1536,12 +1955,15 @@ def main():
 
     if args.reverify:
         reverify_existing(out_dir, headless=not args.no_headless,
-                          profile_dir=profile_dir, force=args.force, source_url=args.url)
+                          profile_dir=profile_dir, force=args.force, source_url=args.url,
+                          date_timeout=args.date_timeout)
     else:
         scrape_gallery(args.url, out_dir, headless=not args.no_headless,
                        skip_downloaded=args.skip_downloaded,
                        skip_collections=args.skip_collections,
-                       profile_dir=profile_dir)
+                       profile_dir=profile_dir,
+                       tab_timeout=args.tab_timeout,
+                       date_timeout=args.date_timeout)
 
 
 if __name__ == "__main__":

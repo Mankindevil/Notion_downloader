@@ -65,3 +65,26 @@ ape_insight/
 ├── download.log
 └── .downloaded_pids.txt        # resume checkpoint
 ```
+
+# Fanbox MEGA update sync
+
+`fanbox_mega_sync.py` scans all text exports below `FANBOX_SOURCE_DIR`. For
+duplicate exports such as `links-123.txt`, `links-123 (1).txt`, and
+`links-123 (2).txt`, it first selects the newest document snapshot, then picks
+the highest `UpdateN` MEGA file link inside that snapshot. It recursively checks
+`MEGA_TARGET_DIR`; matching files are
+verified using the content MAC embedded in the public MEGA link, and only
+missing files are downloaded. Incomplete downloads use a resumable `.part`
+file and are renamed into place only after integrity verification.
+
+Configure local paths in `.env`, then run with the repository virtual
+environment:
+
+```powershell
+.\.venv\Scripts\python.exe fanbox_mega_sync.py --dry-run
+.\.venv\Scripts\python.exe fanbox_mega_sync.py
+```
+
+Every post is checked by default. `--recent-days 30` is available only when a
+temporary date filter is wanted. If a same-name file has the wrong size or
+MEGA content MAC, the script fails closed and does not overwrite it.
